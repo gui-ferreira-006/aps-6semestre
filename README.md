@@ -1,90 +1,141 @@
 # APS (Atividades Práticas Supervisionadas) 6
 
-![Python](https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white)
-![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat-square&logo=javascript&logoColor=black)
-![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=flat-square&logo=html5&logoColor=white)
-![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=flat-square&logo=css3&logoColor=white)
-![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=flat-square&logo=mysql&logoColor=white)
-![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white)
-![OpenCV](https://img.shields.io/badge/OpenCV-5C3EE8?style=flat-square&logo=opencv&logoColor=white)
-![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3776AB?style=flat&logo=python&logoColor=white)
+![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat&logo=javascript&logoColor=black)
+![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=flat&logo=html5&logoColor=white)
+![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=flat&logo=css3&logoColor=white)
+![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=flat&logo=mysql&logoColor=white)
+![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat&logo=sqlite&logoColor=white)
+![OpenCV](https://img.shields.io/badge/OpenCV-5C3EE8?style=flat&logo=opencv&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white)
+
+---
+
+> 🔐 **Sistema de Identificação e Autenticação Biométrica**
+> Ciência da Computação · UNIP · 2026/2
 
 ---
 
 ## 1. Informações Gerais
 
-| Campo | Descrição |
+| Item | Detalhe |
 |---|---|
-| Curso | Ciência da Computação (6º Semestre) |
-| Disciplina Base | Processamento de Imagens e Visão Computacional |
-| Tema Norteador | Meio Ambiente e Sustentabilidade (Foco: Descarte de Lixo Eletrônico / E-waste) |
+| **Curso** | Ciência da Computação — 6º Semestre |
+| **Semestre** | 2026/2 |
+| **Disciplina base** | Processamento de Imagem e Visão Computacional (PIVC) |
+| **Tema oficial** | Desenvolvimento de um Sistema de Identificação e Autenticação Biométrica |
 
-**Equipe**
-- Guilherme
-- Júlia
+### 👥 Equipe
+
+| Integrante | RA | Responsabilidade |
+|---|---|---|
+| Guilherme | — | Backend, Visão Computacional & Infraestrutura |
+| Júlia Fernandes | R101BF1 | Frontend & Banco de Dados |
+| Felipe | — | *a decidir* |
 
 ---
 
 ## 2. Visão Geral do Projeto
 
-O projeto consiste no desenvolvimento de uma aplicação Web (localhost) voltada para o incentivo ao descarte correto de equipamentos eletrônicos. O sistema utilizará **reconhecimento e biometria facial** para autenticar os usuários em ecopontos ou estações de coleta. Ao realizar o descarte, o usuário é validado pela câmera e recebe uma pontuação ou benefícios em sua conta, garantindo um processo seguro, sem fraudes e totalmente automatizado (paperless/cardless).
+Sistema de segurança por **reconhecimento facial** para um cofre de segurança máxima do **Ministério do Meio Ambiente**.
+
+O cofre guarda informações sobre toxinas perigosas capazes de causar uma catástrofe global. O sistema é a **última linha de defesa**: só libera o acesso após validar o rosto da pessoa em tempo real.
 
 ---
 
-## 3. Objetivos
+## 3. Objetivos e Regras de Negócio
 
-**Objetivo Geral**
+**Objetivo geral:** criar um sistema **Web** robusto de autenticação biométrica com reconhecimento facial em tempo real.
 
-Desenvolver um sistema Web funcional de autenticação via biometria facial atrelado a um programa de benefícios para descarte de lixo eletrônico.
+### 🎚️ Níveis de acesso
 
-**Objetivos Específicos**
+| Nível | Quem tem acesso |
+|:---:|---|
+| **1** | Indivíduos com permissão geral |
+| **2** | Diretores de divisões específicas |
+| **3** | Exclusivo do Ministro do Meio Ambiente |
 
-- Desenvolver uma interface Web responsiva (Frontend) para captura da imagem via webcam.
-- Processar a imagem e extrair as características faciais usando bibliotecas de Visão Computacional em Python (Backend).
-- Criar uma API (Backend) para orquestrar a comunicação entre o Frontend, o motor de biometria e a gestão da pontuação dos usuários.
-- Modelar um banco de dados relacional para armazenar credenciais de usuários, hash de senhas, vetor biométrico e saldo de pontos.
-- Empacotar toda a aplicação utilizando Docker para facilitar o deploy e a execução do ambiente.
+### 🧪 Requisito técnico obrigatório
 
----
+O processamento da imagem **precisa** passar pelas 5 fases do processamento de imagens digitais:
 
-## 4. Ideação e Justificativa (Descarte de Eletrônicos com Biometria)
-
-**O Problema**
-
-O descarte irregular de lixo eletrônico causa contaminação do solo e da água devido a metais pesados. Além disso, sistemas de recompensa tradicionais (com cartões ou senhas) são suscetíveis a fraudes ou esquecimentos.
-
-**A Solução**
-
-Uma estação de descarte onde o usuário se identifica apenas olhando para a câmera. O sistema reconhece a face (Visão Computacional), acessa o banco de dados e adiciona os "Eco-pontos" na conta do usuário, que podem ser trocados por benefícios futuramente. A biometria garante que a pessoa certa está recebendo os pontos, de forma higiênica (contactless) e rápida.
+1. **Aquisição** — sensor / câmera
+2. **Pré-processamento**
+3. **Segmentação**
+4. **Extração de características**
+5. **Classificação e interpretação**
 
 ---
 
-## 5. Divisão de Tarefas e Responsabilidades
+## 4. Arquitetura e Tecnologias
 
-### Guilherme — Backend, Visão Computacional & Infraestrutura (Docker)
-
-- **Visão Computacional:** Implementar detecção e reconhecimento facial usando Python (OpenCV, face_recognition, etc.).
-- **Desenvolvimento da API (Backend):** Desenvolver o servidor em Python (sugestão: FastAPI ou Flask) para receber a imagem, processar a autenticação e gerenciar a lógica de adição de pontos.
-- **Integração de APIs Externas:** Estudar e implementar APIs adicionais, se necessário (ex: API de localização de ecopontos, envio de e-mail de confirmação).
-- **Dockerização:** Criar os arquivos Dockerfile e docker-compose.yml para orquestrar os contêineres da aplicação.
-
-### Júlia — Frontend & Banco de Dados
-
-- **Interface Web (Frontend):** Desenvolver a interface do usuário usando HTML, CSS e JavaScript puro (Vanilla JS ou algum framework leve), focando em responsividade.
-- **Captura de Imagem:** Implementar a lógica em JavaScript (navigator.mediaDevices.getUserMedia) para acessar a webcam do usuário, tirar a foto e enviá-la para a API via requisição HTTP (Fetch/Axios).
-- **Modelagem e Setup do Banco de Dados:** Estruturar as tabelas (Usuários, Biometria, Pontuação, Histórico de Descartes).
-- **Gestão do SGBD:** Configurar e integrar o banco de dados escolhido (preferencialmente MySQL para rodar junto ao Docker).
-
----
-
-## 6. Arquitetura Tecnológica Definida
+Todas as escolhas estão dentro das opções permitidas pelo manual.
 
 | Camada | Tecnologia |
 |---|---|
-| Frontend | HTML5, CSS3, JavaScript |
-| Backend | Python (FastAPI, Flask ou Django) |
-| Banco de Dados | MySQL (Recomendado para arquitetura multi-contêiner) ou SQLite |
-| Visão Computacional | OpenCV / Bibliotecas Python de biometria |
-| Deploy e Ambiente | Docker e Docker Compose |
+| **Frontend** (captura de imagem) | HTML, CSS, JavaScript (Vanilla ou TensorFlow.js) |
+| **Backend** (motor biométrico e API) | Python |
+| **Visão Computacional** | OpenCV |
+| **Banco de Dados** | MySQL — credenciais, hashes, nível de acesso e vetores faciais |
+| **Banco de Dados (local/testes)** | SQLite |
+| **Infraestrutura** | Docker (containerização) |
+
+> ❓ **Confirmar com o orientador:** se o Docker substitui o uso sugerido de XAMPP/Apache.
 
 ---
+
+## 5. Trabalho Escrito (Dissertação) — 70% da nota
+
+### 📐 Formatação obrigatória
+
+- Fonte **Arial 12**
+- Espaçamento **1,5**
+- Margens **2,5 cm**
+- Papel **A4**
+- Encadernação em **espiral com capa transparente**
+
+### 📑 Estrutura e limite de páginas
+
+| # | Seção | Páginas |
+|:--:|---|:--:|
+| 1 | Capa (curso, tema, relação de alunos com Nome/RA) | — |
+| 2 | Índice | — |
+| 3 | Objetivo e motivação do trabalho | 1 a 2 |
+| 4 | Introdução | 2 a 8 |
+| 5 | Fundamentos das principais técnicas (Reconhecimento Facial) | 10 a 20 |
+| 6 | Plano de desenvolvimento da aplicação | 5 a 15 |
+| 7 | Projeto (estrutura e módulos) do programa | 18 a 35 |
+| 8 | Relatório de Código (linhas de código do programa) | — |
+| 9 | Bibliografia | — |
+| 10 | Ficha de Atividades Práticas Supervisionadas | — |
+
+**Observações por seção:**
+
+- **Seção 5** → pesquisar OpenCV, Redes Neurais, Haar Cascades, LBPH etc.
+- **Seção 6** → ferramentas e elementos usados.
+- **Seção 7** → diagramas do banco, arquitetura da API e as 5 fases do processamento aplicadas na prática.
+- **Seção 8** → modelo disponibilizado no Teams.
+
+> 💡 **Não esquecer:** o documento precisa discutir a **interdisciplinaridade** — como Banco de Dados, Redes/Web, Cálculo Numérico e PIVC se integram no projeto.
+
+---
+
+## 6. Cronograma e Prazos
+
+| Etapa | Prazo |
+|---|---|
+| Montagem do grupo | até **12/11/2026** |
+| Postagem do trabalho (site UNIP) | **13/10/2026 a 12/11/2026** |
+| Entregas parciais (Microsoft Teams) | a combinar com o orientador |
+| Apresentação final | **30% da nota** |
+
+**Apresentação final:** mostrar o programa rodando em um computador, provando todas as funcionalidades, funções extras e tratamento de erros.
+
+---
+
+## ✅ Pendências
+
+- [ ] Definir a área do Felipe
+- [ ] Confirmar Docker x XAMPP/Apache com o orientador
+- [ ] Combinar datas das entregas parciais no Teams
+- [ ] Coletar os RAs de Guilherme e Felipe para a capa
