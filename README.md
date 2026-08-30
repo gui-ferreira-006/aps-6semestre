@@ -23,7 +23,7 @@
 | **Curso** | Ciência da Computação — 6º Semestre |
 | **Semestre** | 2026/2 |
 | **Disciplina base** | Processamento de Imagem e Visão Computacional (PIVC) |
-| **Tema oficial** | Desenvolvimento de um Sistema de Identificação e Autenticação Biométrica |
+| **Tema oficial** | Frente de Autenticação e Controle de Acesso - F.A.C.A. |
 
 ### 👥 Equipe
 
