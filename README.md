@@ -30,8 +30,8 @@
 | Integrante | RA | Responsabilidade |
 |---|---|---|
 | Guilherme | G9483B2 | Backend, Visão Computacional & Infraestrutura |
-| Júlia Fernandes | R101BF1 | Frontend & Banco de Dados |
-| Felipe | R079CB0 | *a decidir* |
+| Júlia Fernandes | R101BF1 | Frontend |
+| Felipe | R079CB0 | Banco de Dados |
 
 ---
 
