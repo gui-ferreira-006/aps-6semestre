@@ -31,7 +31,7 @@
 |---|---|---|
 | Guilherme | — | Backend, Visão Computacional & Infraestrutura |
 | Júlia Fernandes | R101BF1 | Frontend & Banco de Dados |
-| Felipe | — | *a decidir* |
+| Felipe | R079CB0 | *a decidir* |
 
 ---
 
