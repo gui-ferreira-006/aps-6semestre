@@ -23,15 +23,15 @@
 | **Curso** | Ciência da Computação — 6º Semestre |
 | **Semestre** | 2026/2 |
 | **Disciplina base** | Processamento de Imagem e Visão Computacional (PIVC) |
-| **Tema oficial** | Desenvolvimento de um Sistema de Identificação e Autenticação Biométrica |
+| **Tema oficial** | Frente de Autenticação e Controle de Acesso - F.A.C.A. |
 
 ### 👥 Equipe
 
 | Integrante | RA | Responsabilidade |
 |---|---|---|
 | Guilherme | G9483B2 | Backend, Visão Computacional & Infraestrutura |
-| Júlia Fernandes | R101BF1 | Frontend & Banco de Dados |
-| Felipe | R079CB0 | *a decidir* |
+| Júlia Fernandes | R101BF1 | Frontend |
+| Felipe | R079CB0 | Banco de Dados |
 
 ---
 
