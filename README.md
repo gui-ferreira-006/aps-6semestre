@@ -30,8 +30,8 @@
 | Integrante | RA | Responsabilidade |
 |---|---|---|
 | Guilherme | G9483B2 | Backend, Visão Computacional & Infraestrutura |
-| Júlia Fernandes | R101BF1 | Frontend |
-| Felipe | R079CB0 | Banco de Dados |
+| Júlia Fernandes | R101BF1 | Frontend/Documentação |
+| Felipe | R079CB0 | Banco de Dados/Documentação |
 
 ---
 
@@ -135,7 +135,7 @@ Todas as escolhas estão dentro das opções permitidas pelo manual.
 
 ## ✅ Pendências
 
-- [ ] Definir a área do Felipe
+- [x] Definir a área do Felipe
 - [ ] Confirmar Docker x XAMPP/Apache com o orientador
 - [ ] Combinar datas das entregas parciais no Teams
-- [ ] Coletar os RAs de Guilherme e Felipe para a capa
+- [x] Coletar os RAs de Guilherme e Felipe para a capa
