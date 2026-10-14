@@ -32,21 +32,25 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // -------------------------------------------------------------------------
-  // 1. Máscara Automática de CPF (000.000.000-00)
+  // 1. Máscara de CPF (Formata se forem números, ou aceita qualquer texto de teste)
   // -------------------------------------------------------------------------
   cpfInput.addEventListener('input', (e) => {
-    let value = e.target.value.replace(/\D/g, '');
-    if (value.length > 11) value = value.slice(0, 11);
+    const raw = e.target.value;
+    // Se o usuário digitou apenas números, aplica máscara de CPF
+    if (/^\d+$/.test(raw.replace(/[.-]/g, ''))) {
+      let digits = raw.replace(/\D/g, '');
+      if (digits.length > 11) digits = digits.slice(0, 11);
 
-    if (value.length > 9) {
-      value = value.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
-    } else if (value.length > 6) {
-      value = value.replace(/(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3');
-    } else if (value.length > 3) {
-      value = value.replace(/(\d{3})(\d{1,3})/, '$1.$2');
+      if (digits.length > 9) {
+        e.target.value = digits.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
+      } else if (digits.length > 6) {
+        e.target.value = digits.replace(/(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3');
+      } else if (digits.length > 3) {
+        e.target.value = digits.replace(/(\d{3})(\d{1,3})/, '$1.$2');
+      } else {
+        e.target.value = digits;
+      }
     }
-
-    e.target.value = value;
   });
 
   // -------------------------------------------------------------------------
@@ -81,18 +85,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const cpfVal = cpfInput.value.trim();
     const pwdVal = passwordInput.value.trim();
 
-    if (!cpfVal || !pwdVal) {
-      showFeedback(loginFeedback, 'Preencha o CPF e a senha para continuar.', 'error');
-      return;
-    }
+    // Se os campos estiverem vazios, preenche com valores demonstrativos para teste rápido
+    if (!cpfVal) cpfInput.value = '123.456.789-00';
+    if (!pwdVal) passwordInput.value = '••••••••';
 
-    // Feedback temporário de validação
-    showFeedback(loginFeedback, 'Credenciais verificadas. Iniciando módulo biométrico...', 'info');
+    // Feedback visual de validação
+    showFeedback(loginFeedback, 'Identificação confirmada. Carregando módulo biométrico...', 'info');
 
     setTimeout(() => {
       clearFeedback(loginFeedback);
       transitionToStep('biometrics');
-    }, 600);
+    }, 450);
   });
 
   // -------------------------------------------------------------------------
