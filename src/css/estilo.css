@@ -1,0 +1,735 @@
+/* ==========================================================================
+   F.A.C.A - Frente de Autenticação e Controle de Acesso
+   Ministério do Meio Ambiente - Cyber Security Biometrics UI
+   ========================================================================== */
+
+:root {
+  --bg-dark: #070709;
+  --card-bg: rgba(14, 15, 20, 0.88);
+  --card-border: rgba(255, 255, 255, 0.07);
+  --card-border-glow: rgba(184, 17, 33, 0.28);
+  
+  --red-primary: #b80f1e;
+  --red-hover: #cf1426;
+  --red-glow: rgba(207, 20, 38, 0.55);
+  --red-dim: #5c0f17;
+  
+  --text-main: #f0f2f5;
+  --text-muted: #727a8c;
+  --text-dim: #4c5363;
+  --text-highlight: #ffffff;
+  
+  --input-bg: #121319;
+  --input-border: #22242e;
+  --input-border-focus: #b80f1e;
+  
+  --font-display: 'Orbitron', sans-serif;
+  --font-ui: 'Rajdhani', sans-serif;
+  --font-mono: 'Share Tech Mono', monospace;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  width: 100vw;
+  min-height: 100vh;
+  background-color: var(--bg-dark);
+  color: var(--text-main);
+  font-family: var(--font-ui);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-x: hidden;
+  position: relative;
+  user-select: none;
+}
+
+/* --------------------------------------------------------------------------
+   Canvas de Fundo e Vinheta
+   -------------------------------------------------------------------------- */
+#bg-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.ambient-glow {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: 
+    radial-gradient(circle at 50% 25%, rgba(184, 15, 30, 0.12) 0%, transparent 60%),
+    radial-gradient(circle at 50% 50%, rgba(7, 7, 9, 0.2) 0%, rgba(7, 7, 9, 0.85) 100%);
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* --------------------------------------------------------------------------
+   HUD Corner Elements (Fiel ao design original)
+   -------------------------------------------------------------------------- */
+.hud-corner {
+  position: fixed;
+  z-index: 5;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 2px;
+  color: #555d6e;
+  line-height: 1.6;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+.hud-corner.top-left {
+  top: 32px;
+  left: 40px;
+  display: flex;
+  flex-direction: column;
+}
+
+.hud-corner.top-left .highlight {
+  color: #8c96a8;
+  margin-top: 4px;
+}
+
+.hud-corner.top-right {
+  top: 32px;
+  right: 40px;
+}
+
+.restricted-tag {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.restricted-tag span {
+  color: #8590a3;
+  letter-spacing: 2.5px;
+}
+
+.restricted-tag .hud-line {
+  width: 44px;
+  height: 2px;
+  background-color: var(--red-primary);
+  margin-top: 5px;
+  box-shadow: 0 0 6px var(--red-primary);
+}
+
+.hud-corner.bottom-left {
+  bottom: 32px;
+  left: 40px;
+  display: flex;
+  flex-direction: column;
+}
+
+.hud-corner.bottom-right {
+  bottom: 32px;
+  right: 40px;
+}
+
+.nature-tag {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.star-icon {
+  width: 24px;
+  height: 24px;
+  color: #798396;
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.2));
+}
+
+.nature-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.4;
+  letter-spacing: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   Estrutura Principal Central
+   -------------------------------------------------------------------------- */
+.main-container {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  width: 100%;
+  max-width: 520px;
+}
+
+/* --------------------------------------------------------------------------
+   Logo Header
+   -------------------------------------------------------------------------- */
+.system-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.logo-wrapper {
+  position: relative;
+  width: 110px;
+  height: 110px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.shield-svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 0 16px rgba(220, 20, 40, 0.4));
+  animation: pulseLogo 4s ease-in-out infinite alternate;
+}
+
+@keyframes pulseLogo {
+  0% {
+    filter: drop-shadow(0 0 12px rgba(200, 15, 30, 0.35));
+  }
+  100% {
+    filter: drop-shadow(0 0 24px rgba(255, 25, 45, 0.7));
+  }
+}
+
+.system-title {
+  font-family: var(--font-display);
+  font-size: 2.3rem;
+  font-weight: 800;
+  letter-spacing: 0.26em;
+  color: #ffffff;
+  margin-right: -0.26em; /* compensa espaçamento final */
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+}
+
+.system-subtitle {
+  font-family: var(--font-ui);
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.34em;
+  color: #8c94a4;
+  margin-top: 4px;
+  margin-right: -0.34em;
+  text-transform: uppercase;
+}
+
+/* --------------------------------------------------------------------------
+   Área dos Cards e Animação de Troca
+   -------------------------------------------------------------------------- */
+.auth-card-stage {
+  width: 100%;
+  position: relative;
+  min-height: 380px;
+}
+
+.auth-card {
+  width: 100%;
+  background: var(--card-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--card-border);
+  box-shadow: 
+    0 20px 40px rgba(0, 0, 0, 0.75),
+    0 0 25px var(--card-border-glow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  padding: 30px 32px;
+  transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.35s;
+  
+  /* Inicia escondido, a classe .active ativa */
+  display: none;
+  opacity: 0;
+  transform: translateY(12px) scale(0.98);
+}
+
+.auth-card.active {
+  display: block;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* --------------------------------------------------------------------------
+   Card Header
+   -------------------------------------------------------------------------- */
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.icon-avatar {
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #dc1a2a;
+  background: rgba(220, 26, 42, 0.08);
+  border: 1px solid rgba(220, 26, 42, 0.25);
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.header-text h2 {
+  font-family: var(--font-display);
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #f2f4f8;
+  text-transform: uppercase;
+}
+
+.header-text p {
+  font-family: var(--font-ui);
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 1.2px;
+  color: #6d7585;
+  margin-top: 2px;
+  text-transform: uppercase;
+}
+
+/* --------------------------------------------------------------------------
+   Formulário de Login
+   -------------------------------------------------------------------------- */
+.card-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.input-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  transition: all 0.25s ease;
+}
+
+.input-group:focus-within {
+  border-color: var(--input-border-focus);
+  box-shadow: 0 0 12px rgba(184, 15, 30, 0.35);
+  background: #151720;
+}
+
+.input-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  color: #5d6575;
+  flex-shrink: 0;
+  transition: color 0.25s ease;
+}
+
+.input-group:focus-within .input-icon {
+  color: #dc1a2a;
+}
+
+.input-group input {
+  width: 100%;
+  height: 46px;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-main);
+  font-family: var(--font-ui);
+  font-size: 0.98rem;
+  font-weight: 500;
+  letter-spacing: 0.8px;
+}
+
+.input-group input::placeholder {
+  color: #555c6d;
+  font-weight: 500;
+}
+
+.btn-toggle-pwd {
+  background: transparent;
+  border: none;
+  width: 42px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #586070;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.btn-toggle-pwd:hover {
+  color: #ffffff;
+}
+
+/* Botão Primário (ENTRAR) */
+.btn-primary {
+  width: 100%;
+  height: 46px;
+  background: linear-gradient(180deg, #b80f1e 0%, #940a17 100%);
+  border: 1px solid #d41628;
+  border-radius: 8px;
+  color: #ffffff;
+  font-family: var(--font-display);
+  font-size: 0.86rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 6px;
+  box-shadow: 0 4px 16px rgba(184, 15, 30, 0.45);
+  transition: all 0.25s ease;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(180deg, #cf1426 0%, #aa0d1b 100%);
+  box-shadow: 0 4px 24px rgba(220, 20, 40, 0.7);
+  transform: translateY(-1px);
+}
+
+.btn-primary:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 8px rgba(184, 15, 30, 0.4);
+}
+
+.card-footer {
+  margin-top: 6px;
+  text-align: center;
+}
+
+.forgot-pwd-link {
+  color: #636b7c;
+  font-size: 0.8rem;
+  text-decoration: none;
+  letter-spacing: 0.5px;
+  transition: color 0.2s ease;
+}
+
+.forgot-pwd-link:hover {
+  color: #b0bac9;
+  text-decoration: underline;
+}
+
+/* --------------------------------------------------------------------------
+   Card de Biometria / Reconhecimento Facial
+   -------------------------------------------------------------------------- */
+.scanner-viewport {
+  position: relative;
+  width: 100%;
+  height: 240px;
+  background: radial-gradient(circle at center, #0e1017 0%, #060709 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.8);
+}
+
+/* Retículas dos cantos estilo HUD */
+.reticle-corner {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-color: #d81426;
+  border-style: solid;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.corner-tl {
+  top: 10px;
+  left: 10px;
+  border-width: 2.5px 0 0 2.5px;
+}
+
+.corner-tr {
+  top: 10px;
+  right: 10px;
+  border-width: 2.5px 2.5px 0 0;
+}
+
+.corner-bl {
+  bottom: 10px;
+  left: 10px;
+  border-width: 0 0 2.5px 2.5px;
+}
+
+.corner-br {
+  bottom: 10px;
+  right: 10px;
+  border-width: 0 2.5px 2.5px 0;
+}
+
+/* Miras sutis centrais */
+.crosshair-h {
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  right: 14px;
+  height: 1px;
+  background: rgba(220, 20, 40, 0.15);
+  pointer-events: none;
+  z-index: 3;
+}
+
+.crosshair-v {
+  position: absolute;
+  left: 50%;
+  top: 14px;
+  bottom: 14px;
+  width: 1px;
+  background: rgba(220, 20, 40, 0.15);
+  pointer-events: none;
+  z-index: 3;
+}
+
+/* Linha de Varredura Laser */
+.scan-laser {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: #ff2238;
+  box-shadow: 0 0 12px #ff2238, 0 0 20px #ff2238;
+  top: 0;
+  z-index: 6;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.scan-laser.scanning {
+  opacity: 1;
+  animation: laserScan 2.2s ease-in-out infinite alternate;
+}
+
+@keyframes laserScan {
+  0% {
+    top: 6%;
+    opacity: 0.9;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    top: 92%;
+    opacity: 0.9;
+  }
+}
+
+/* Canvas da Malha Facial */
+#face-mesh-canvas {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Vídeo da Webcam */
+#webcam-video {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1); /* espelhado */
+  z-index: 1;
+  display: none;
+  filter: contrast(1.15) brightness(0.9) grayscale(0.2);
+}
+
+/* Overlay de Status HUD no scanner */
+.scanner-hud-overlay {
+  position: absolute;
+  bottom: 8px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 1.5px;
+  color: #727c8e;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.hud-status {
+  color: #dc1a2a;
+  font-weight: 700;
+}
+
+/* Barra de Progresso */
+.scan-progress-container {
+  width: 100%;
+  height: 4px;
+  background: #14161f;
+  border-radius: 2px;
+  margin-top: 14px;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.scan-progress-container.active {
+  opacity: 1;
+}
+
+.scan-progress-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #a80f1e, #ff2a40);
+  box-shadow: 0 0 8px rgba(255, 42, 64, 0.7);
+  transition: width 0.1s linear;
+}
+
+/* Botão Secundário (Iniciar Reconhecimento) */
+.btn-secondary {
+  width: 100%;
+  height: 46px;
+  background: #14161d;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  color: #e2e6ee;
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 1.8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 14px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+  transition: all 0.25s ease;
+}
+
+.btn-secondary:hover {
+  background: #1b1e27;
+  border-color: var(--red-primary);
+  color: #ffffff;
+  box-shadow: 0 0 16px rgba(184, 15, 30, 0.35);
+}
+
+.btn-secondary:active {
+  transform: translateY(1px);
+}
+
+/* Ações de Navegação */
+.card-actions-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 14px;
+}
+
+.btn-link, .btn-link-action {
+  background: transparent;
+  border: none;
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  cursor: pointer;
+  padding: 4px 0;
+  transition: color 0.2s ease;
+}
+
+.btn-link {
+  color: #636b7c;
+}
+
+.btn-link:hover {
+  color: #cfd6e0;
+}
+
+.btn-link-action {
+  color: #8c97aa;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.btn-link-action:hover {
+  color: #dc1a2a;
+}
+
+/* Mensagens de Feedback */
+.feedback-msg {
+  min-height: 18px;
+  font-size: 0.78rem;
+  letter-spacing: 0.8px;
+  text-align: center;
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.feedback-msg.show {
+  opacity: 1;
+}
+
+.feedback-msg.error {
+  color: #ff334b;
+  text-shadow: 0 0 8px rgba(255, 51, 75, 0.4);
+}
+
+.feedback-msg.success {
+  color: #2ed573;
+  text-shadow: 0 0 8px rgba(46, 213, 115, 0.4);
+}
+
+.feedback-msg.info {
+  color: #1e90ff;
+  text-shadow: 0 0 8px rgba(30, 144, 255, 0.4);
+}
+
+/* --------------------------------------------------------------------------
+   Responsividade
+   -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+  .hud-corner {
+    display: none !important;
+  }
+  
+  .main-container {
+    padding: 16px;
+    max-width: 100%;
+  }
+
+  .auth-card {
+    padding: 24px 20px;
+  }
+
+  .system-title {
+    font-size: 1.9rem;
+  }
+
+  .system-subtitle {
+    font-size: 0.68rem;
+    letter-spacing: 0.25em;
+  }
+}
