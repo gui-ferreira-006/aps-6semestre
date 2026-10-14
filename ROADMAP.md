@@ -39,11 +39,13 @@ Modelagem do Banco de Dados e criação do docker-compose.yml base.
 
 ### Etapa 4 — Prova de Conceito (Captura de Vídeo)
 
-![Pendente](https://img.shields.io/badge/status-pendente-lightgrey?style=flat-square)
+![Em Andamento](https://img.shields.io/badge/status-em%20andamento-yellow?style=flat-square)
 ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat-square&logo=javascript&logoColor=black)
 ![Python](https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white)
 
 Prova de Conceito (PoC) da captura de vídeo no JS e envio para o Python.
+- [x] Módulo de captura de vídeo e retícula HUD em JavaScript (`src/js/scanner-facial.js`)
+- [ ] Envio dos frames para processamento no backend Python
 
 ---
 
@@ -58,11 +60,17 @@ Desenvolvimento do motor de biometria (Extração e comparação de faces).
 
 ### Etapa 6 — Telas Web e Integração
 
-![Pendente](https://img.shields.io/badge/status-pendente-lightgrey?style=flat-square)
+![Em Andamento](https://img.shields.io/badge/status-em%20andamento-yellow?style=flat-square)
 ![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=flat-square&logo=html5&logoColor=white)
 ![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=flat-square&logo=css3&logoColor=white)
+![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat-square&logo=javascript&logoColor=black)
 
 Desenvolvimento das telas Web finais e integração completa.
+- [x] Interface cibernética/militar de segurança (F.A.C.A) concluída
+- [x] Fluxo em duas etapas: Login por CPF/Senha ➔ Reconhecimento Facial
+- [x] Malha holográfica 3D e simulação de escaneamento em Canvas
+- [x] Relatório de entrega disponível em: [`docs/RELATORIO_FRONTEND.md`](docs/RELATORIO_FRONTEND.md)
+- [ ] Integração com as rotas de autenticação da API Python / Banco de Dados
 
 ---
 
