@@ -79,18 +79,39 @@ document.addEventListener('DOMContentLoaded', () => {
   // -------------------------------------------------------------------------
   // 3. Submissão do Formulário de Login -> Transição para Biometria
   // -------------------------------------------------------------------------
-  formLogin.addEventListener('submit', (e) => {
+  formLogin.addEventListener('submit', async (e) => {
     e.preventDefault();
 
     const cpfVal = cpfInput.value.trim();
     const pwdVal = passwordInput.value.trim();
 
-    // Se os campos estiverem vazios, preenche com valores demonstrativos para teste rápido
-    if (!cpfVal) cpfInput.value = '123.456.789-00';
-    if (!pwdVal) passwordInput.value = '••••••••';
+    /*
+     * ========================================================================
+     * [INTEGRAÇÃO BACKEND PYTHON (MYSQL / DOCKER) - ETAPA 1: CPF E SENHA]
+     * O Docker e o MySQL ficam no Backend em Python, e este Frontend será
+     * compactado para rodar integrado ao Python.
+     * Quando o banco estiver ativo, descomente a gramática abaixo:
+     *
+     * try {
+     *   await window.ServicoApiFaca.validarCredenciais(cpfVal, pwdVal);
+     *   showFeedback(loginFeedback, 'Credenciais validadas. Iniciando biometria...', 'info');
+     *   setTimeout(() => {
+     *     clearFeedback(loginFeedback);
+     *     transitionToStep('biometrics');
+     *   }, 450);
+     * } catch (erro) {
+     *   showFeedback(loginFeedback, erro.message, 'error');
+     * }
+     * return;
+     * ========================================================================
+     */
 
-    // Feedback visual de validação
-    showFeedback(loginFeedback, 'Identificação confirmada. Carregando módulo biométrico...', 'info');
+    // Transição estrutural de interface (aguardando integração SQL no Backend Python)
+    showFeedback(
+      loginFeedback,
+      'Aguardando integração SQL. Avançando para etapa biométrica...',
+      'info'
+    );
 
     setTimeout(() => {
       clearFeedback(loginFeedback);
@@ -129,7 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // -------------------------------------------------------------------------
-  // 5. Interação de Reconhecimento Facial (Biometria)
+  // 5. Interação de Reconhecimento Facial (Biometria) -> Nível de Acesso SQL
   // -------------------------------------------------------------------------
   btnStartScan.addEventListener('click', () => {
     if (!scanner || scanner.isScanning) return;
@@ -138,13 +159,40 @@ document.addEventListener('DOMContentLoaded', () => {
     btnScanLabel.textContent = 'ESCANEANDO...';
     clearFeedback(bioFeedback);
 
-    scanner.startScanning(() => {
-      // Callback ao concluir leitura
-      btnScanLabel.textContent = 'RECONHECIMENTO CONCLUÍDO';
+    scanner.startScanning(async () => {
+      btnScanLabel.textContent = 'LEITURA CONCLUÍDA';
+
+      /*
+       * ======================================================================
+       * [INTEGRAÇÃO BACKEND PYTHON (MYSQL / DOCKER) - ETAPA 2: BIOMETRIA]
+       * Quando o Backend Python + MySQL estiverem ativos, descomente a
+       * gramática fixa abaixo para autenticar a face e redirecionar por nível:
+       *
+       * try {
+       *   const base64Puro = capturarBase64Puro(scanner.canvas);
+       *   const dadosAuth = await window.ServicoApiFaca.autenticarBiometria(base64Puro);
+       *
+       *   // Redirecionamento baseado em `nivel_acesso` (1, 2 ou 3) vindo do MySQL:
+       *   // - Nível 3: Menu Completo (Níveis 1, 2 e 3) -> nivel3.html
+       *   // - Nível 2: Menu Níveis 1 e 2 -> nivel3.html
+       *   // - Nível 1: Somente Menu Nível 1 -> nivel3.html
+       *   if (dadosAuth.usuario.nivel_acesso === 3) {
+       *     window.location.href = 'nivel3.html';
+       *   } else if (dadosAuth.usuario.nivel_acesso === 2) {
+       *     window.location.href = 'nivel3.html';
+       *   } else {
+       *     window.location.href = 'nivel3.html';
+       *   }
+       * } catch (erro) {
+       *   showFeedback(bioFeedback, erro.mensagem || 'Acesso negado pelo banco.', 'error');
+       * }
+       * ======================================================================
+       */
+
       showFeedback(
         bioFeedback,
-        'ACESSO LIBERADO: Nível 2 - Divisão de Toxinas e Preservação',
-        'success'
+        'Captura concluída. Aguardando Backend Python / MySQL para validar acesso.',
+        'info'
       );
 
       setTimeout(() => {

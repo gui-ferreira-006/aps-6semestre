@@ -1,0 +1,1022 @@
+/* ==========================================================================
+   F.A.C.A - Painel de Nível 3 (Auditoria Global e Monitoramento)
+   Estilização fiel à referência visual Cyber Security / HUD Militar
+   ========================================================================== */
+
+body.nivel3-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 96px 40px 84px;
+  overflow-x: hidden;
+}
+
+body.nivel3-body .hud-corner.top-left,
+body.nivel3-body .hud-corner.top-right {
+  top: 20px;
+}
+
+body.nivel3-body .hud-corner.bottom-left,
+body.nivel3-body .hud-corner.bottom-right {
+  bottom: 18px;
+}
+
+/* Marca d'água de código binário à direita (fiel à imagem de referência) */
+.binary-watermark {
+  position: fixed;
+  right: 5%;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  line-height: 1.45;
+  letter-spacing: 2px;
+  color: rgba(210, 45, 45, 0.14);
+  pointer-events: none;
+  z-index: 1;
+  user-select: none;
+  white-space: pre;
+}
+
+.binary-watermark.top-binary {
+  top: 15%;
+}
+
+.binary-watermark.bottom-binary {
+  bottom: 14%;
+  right: 16%;
+}
+
+/* Barra de teste de Role integrada ao cabeçalho do painel (sem position fixed) */
+.rbac-preview-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.rbac-preview-label {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 1.2px;
+  color: #8c96a8;
+  text-transform: uppercase;
+}
+
+.rbac-preview-buttons {
+  display: flex;
+  gap: 5px;
+  background: rgba(10, 11, 16, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 3px;
+  border-radius: 6px;
+}
+
+.btn-role-switch {
+  background: transparent;
+  border: 1px solid transparent;
+  color: #7d8799;
+  font-family: var(--font-display);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-role-switch:hover {
+  color: #ffffff;
+  border-color: rgba(220, 26, 42, 0.35);
+}
+
+.btn-role-switch.active {
+  background: linear-gradient(180deg, rgba(184, 15, 30, 0.45) 0%, rgba(120, 10, 20, 0.65) 100%);
+  border-color: #dc1a2a;
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(220, 26, 42, 0.4);
+}
+
+/* ==========================================================================
+   Grid Principal: Menu Lateral Esquerdo + Painel Direito
+   ========================================================================== */
+.nivel3-workspace {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  max-width: 1480px;
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 22px;
+  align-items: stretch;
+  transition: grid-template-columns 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Estado com Menu Escondido: mostra apenas a logo e aumenta a tela principal */
+.nivel3-workspace.menu-recolhido {
+  grid-template-columns: 78px 1fr;
+}
+
+/* ==========================================================================
+   Menu Lateral (Sidebar RBAC Cumulativo: Nível 1, Nível 2, Nível 3)
+   ========================================================================== */
+.sidebar-faca {
+  background: linear-gradient(180deg, rgba(16, 17, 23, 0.92) 0%, rgba(10, 11, 15, 0.95) 100%);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow:
+    0 18px 40px rgba(0, 0, 0, 0.8),
+    0 0 24px rgba(184, 15, 30, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nivel3-workspace.menu-recolhido .sidebar-faca {
+  align-self: start;
+}
+
+/* Topo do Menu com Mini Logo F.A.C.A + Botão de Recolher */
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 18px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.sidebar-brand-identity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.sidebar-mini-shield {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 8px rgba(220, 20, 40, 0.5));
+  transition: transform 0.25s ease;
+}
+
+.btn-toggle-menu {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: rgba(220, 26, 42, 0.12);
+  border: 1px solid rgba(220, 26, 42, 0.35);
+  color: #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.btn-toggle-menu:hover {
+  background: #b80f1e;
+  border-color: #ff3b4e;
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(220, 26, 42, 0.55);
+}
+
+/* Regras quando o menu está recolhido: esconde itens e textos, deixando apenas a logo e o botão */
+.nivel3-workspace.menu-recolhido .sidebar-brand {
+  flex-direction: column;
+  justify-content: center;
+  padding: 14px 10px;
+  border-bottom: none;
+  gap: 10px;
+}
+
+.nivel3-workspace.menu-recolhido .sidebar-brand-identity {
+  cursor: pointer;
+}
+
+.nivel3-workspace.menu-recolhido .sidebar-mini-shield {
+  width: 48px;
+  height: 48px;
+}
+
+.nivel3-workspace.menu-recolhido .sidebar-mini-shield:hover {
+  transform: scale(1.08);
+}
+
+.nivel3-workspace.menu-recolhido .sidebar-brand-text,
+.nivel3-workspace.menu-recolhido .sidebar-nav,
+.nivel3-workspace.menu-recolhido .sidebar-footer {
+  display: none;
+}
+
+.nivel3-workspace.menu-recolhido .btn-toggle-menu svg {
+  transform: rotate(180deg);
+}
+
+.sidebar-brand-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.sidebar-brand-title {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  color: #ffffff;
+}
+
+.sidebar-brand-sub {
+  font-family: var(--font-ui);
+  font-size: 0.52rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: #8a93a6;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+/* Grupos de Nível no Menu */
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: 10px 0;
+}
+
+.menu-level-group {
+  padding: 12px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  position: relative;
+  transition: background 0.25s ease;
+}
+
+.menu-level-group.active-level {
+  background: linear-gradient(90deg, rgba(184, 15, 30, 0.26) 0%, rgba(184, 15, 30, 0.05) 100%);
+  border-left: 3px solid #e6192e;
+  padding-left: 15px;
+}
+
+.menu-level-header {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 10px;
+}
+
+.level-grid-icon {
+  width: 15px;
+  height: 15px;
+  color: #dc1a2a;
+  flex-shrink: 0;
+}
+
+.menu-level-title {
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  color: #ffffff;
+}
+
+.menu-level-title span {
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: 0.76rem;
+  color: #8c96a8;
+  letter-spacing: 0.5px;
+}
+
+.menu-items-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.menu-item-btn {
+  width: 100%;
+  background: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  color: #b8c0d0;
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.9px;
+  text-transform: uppercase;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.menu-item-btn svg {
+  width: 14px;
+  height: 14px;
+  color: #c92232;
+  flex-shrink: 0;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.menu-item-btn .muted-tag {
+  color: #727b8d;
+  font-weight: 500;
+  text-transform: none;
+}
+
+.menu-item-btn:hover,
+.menu-item-btn.active {
+  background: rgba(220, 26, 42, 0.14);
+  color: #ffffff;
+}
+
+.menu-item-btn:hover svg,
+.menu-item-btn.active svg {
+  color: #ff2e43;
+  transform: scale(1.08);
+}
+
+/* Rodapé do Menu Lateral: ACESSO (Login) */
+.sidebar-footer {
+  padding: 14px 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(8, 9, 12, 0.6);
+}
+
+.btn-sidebar-login {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: transparent;
+  border: none;
+  color: #d8dee9;
+  font-family: var(--font-display);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-decoration: none;
+  cursor: pointer;
+  padding: 6px 4px;
+  transition: color 0.2s ease;
+}
+
+.btn-sidebar-login svg {
+  width: 16px;
+  height: 16px;
+  color: #dc1a2a;
+}
+
+.btn-sidebar-login span.sub {
+  font-family: var(--font-ui);
+  font-weight: 500;
+  color: #7d8698;
+  font-size: 0.76rem;
+}
+
+.btn-sidebar-login:hover {
+  color: #ffffff;
+}
+
+/* ==========================================================================
+   Área Direita do Dashboard (Painel Nível 3 + 3 Cards Inferiores)
+   ========================================================================== */
+.nivel3-main-area {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* Card Superior Principal: NÍVEL 3 — AUDITORIA GLOBAL E MONITORAMENTO */
+.audit-panel-card {
+  background: linear-gradient(180deg, rgba(16, 18, 24, 0.9) 0%, rgba(11, 12, 17, 0.94) 100%);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow:
+    0 20px 45px rgba(0, 0, 0, 0.78),
+    0 0 28px rgba(184, 15, 30, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 20px 24px 22px;
+}
+
+.audit-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.audit-title-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.audit-title-group svg {
+  width: 22px;
+  height: 22px;
+  color: #dc1a2a;
+  filter: drop-shadow(0 0 6px rgba(220, 26, 42, 0.5));
+}
+
+.audit-title-group h2 {
+  font-family: var(--font-display);
+  font-size: 1.08rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #ffffff;
+  text-transform: uppercase;
+}
+
+.sql-status-badge {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 1.2px;
+  color: #e6a23c;
+  background: rgba(230, 162, 60, 0.1);
+  border: 1px solid rgba(230, 162, 60, 0.3);
+  padding: 4px 10px;
+  border-radius: 4px;
+}
+
+/* Divisão em 2 Colunas: Sessões Ativas (Esq) | Histórico de Acessos (Dir) */
+.audit-split-grid {
+  display: grid;
+  grid-template-columns: 1.05fr 1px 1.15fr;
+  gap: 22px;
+  align-items: start;
+}
+
+.audit-vertical-divider {
+  width: 1px;
+  height: 100%;
+  min-height: 310px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.02) 0%,
+    rgba(220, 26, 42, 0.35) 50%,
+    rgba(255, 255, 255, 0.02) 100%
+  );
+}
+
+/* Sub-cabeçalhos das colunas (SESSÕES ATIVAS e HISTÓRICO DE ACESSOS) */
+.column-subheader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.column-subheader-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-size: 0.84rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #f0f3f8;
+  text-transform: uppercase;
+}
+
+.column-subheader-title svg {
+  width: 17px;
+  height: 17px;
+  color: #dc1a2a;
+}
+
+.btn-novo-usuario {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(180deg, rgba(60, 14, 20, 0.75) 0%, rgba(35, 9, 13, 0.9) 100%);
+  border: 1px solid rgba(220, 35, 50, 0.55);
+  color: #f2f4f8;
+  font-family: var(--font-display);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  box-shadow: 0 0 12px rgba(184, 15, 30, 0.25);
+  transition: all 0.2s ease;
+}
+
+.btn-novo-usuario:hover {
+  background: linear-gradient(180deg, #b80f1e 0%, #870914 100%);
+  border-color: #ff3347;
+  box-shadow: 0 0 16px rgba(220, 26, 42, 0.55);
+}
+
+/* Tabela de Sessões Ativas */
+.sessions-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.sessions-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 6px;
+}
+
+.sessions-table thead tr {
+  background: linear-gradient(90deg, rgba(95, 18, 26, 0.65) 0%, rgba(55, 12, 18, 0.55) 100%);
+}
+
+.sessions-table th {
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 1.4px;
+  color: #d8dee9;
+  text-align: left;
+  padding: 9px 12px;
+  border-top: 1px solid rgba(220, 35, 50, 0.35);
+  border-bottom: 1px solid rgba(220, 35, 50, 0.35);
+   text-transform: uppercase;
+}
+
+.sessions-table th:first-child {
+  border-left: 1px solid rgba(220, 35, 50, 0.35);
+  border-top-left-radius: 6px;
+  border-bottom-left-radius: 6px;
+}
+
+.sessions-table th:last-child {
+  border-right: 1px solid rgba(220, 35, 50, 0.35);
+  border-top-right-radius: 6px;
+  border-bottom-right-radius: 6px;
+}
+
+.sessions-table tbody tr {
+  background: rgba(22, 24, 32, 0.78);
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.sessions-table tbody tr:hover {
+  background: rgba(36, 22, 28, 0.88);
+}
+
+.sessions-table td {
+  padding: 9px 12px;
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  color: #cfd6e4;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.sessions-table td:first-child {
+  border-left: 1px solid rgba(255, 255, 255, 0.05);
+  border-top-left-radius: 6px;
+  border-bottom-left-radius: 6px;
+  color: #e2e7f0;
+  font-weight: 700;
+}
+
+.sessions-table td:last-child {
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  border-top-right-radius: 6px;
+  border-bottom-right-radius: 6px;
+}
+
+.sessions-table td.sql-slot-muted {
+  color: #8892a6;
+  font-family: var(--font-mono);
+  font-size: 0.73rem;
+}
+
+/* Coluna Direita: TIMELINE + Card EVENTO */
+.history-inner-grid {
+  display: grid;
+  grid-template-columns: 195px 1fr;
+  gap: 16px;
+  align-items: stretch;
+}
+
+.timeline-column-label {
+  font-family: var(--font-ui);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #9aa4b8;
+  margin-bottom: 8px;
+  padding-left: 28px;
+  text-transform: uppercase;
+}
+
+.timeline-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+  padding-left: 24px;
+}
+
+/* Linha vertical da Timeline */
+.timeline-list::before {
+  content: '';
+  position: absolute;
+  left: 7px;
+  top: 14px;
+  bottom: 14px;
+  width: 1.5px;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.timeline-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/* Nó circular da Timeline */
+.timeline-node {
+  position: absolute;
+  left: -22px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #14161f;
+  border: 2px solid #555e70;
+  z-index: 2;
+}
+
+.timeline-item.active .timeline-node {
+  background: #ff2238;
+  border-color: #ff6b7b;
+  box-shadow: 0 0 10px #ff2238, 0 0 18px rgba(255, 34, 56, 0.8);
+}
+
+.timeline-pill {
+  width: 100%;
+  background: rgba(22, 24, 32, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+  padding: 7px 10px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.8px;
+  color: #cfd6e4;
+  text-align: center;
+}
+
+.timeline-item.active .timeline-pill {
+  border-color: rgba(220, 26, 42, 0.4);
+  color: #ffffff;
+}
+
+/* Card de EVENTO ao lado da Timeline */
+.evento-card {
+  background: rgba(18, 20, 27, 0.86);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+}
+
+.evento-card-header {
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #ffffff;
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.evento-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: relative;
+  padding-left: 18px;
+}
+
+.evento-list::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 8px;
+  bottom: 8px;
+  width: 1px;
+  background: rgba(220, 26, 42, 0.35);
+}
+
+.evento-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.evento-dot {
+  position: absolute;
+  left: -17px;
+  top: 6px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #181a24;
+  border: 1.5px solid #dc1a2a;
+}
+
+.evento-row:first-child .evento-dot {
+  background: #ff2238;
+  box-shadow: 0 0 8px #ff2238;
+}
+
+.evento-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.evento-title {
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #e4e9f2;
+  letter-spacing: 0.4px;
+}
+
+.evento-desc {
+  font-family: var(--font-ui);
+  font-size: 0.7rem;
+  color: #7c8598;
+}
+
+.btn-unblock {
+  background: rgba(65, 14, 20, 0.75);
+  border: 1px solid rgba(220, 35, 50, 0.55);
+  color: #f0f3f8;
+  font-family: var(--font-display);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 1.1px;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.btn-unblock:hover {
+  background: #b80f1e;
+  border-color: #ff3b4e;
+  box-shadow: 0 0 10px rgba(220, 26, 42, 0.5);
+}
+
+/* ==========================================================================
+   Linha Inferior: 3 Widgets (ALERTAS | PANORAMA DE TOXINAS | COFRE)
+   ========================================================================== */
+.bottom-widgets-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 1.15fr 0.75fr;
+  gap: 18px;
+}
+
+.widget-card {
+  background: linear-gradient(180deg, rgba(16, 18, 24, 0.9) 0%, rgba(10, 11, 16, 0.94) 100%);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 14px 32px rgba(0, 0, 0, 0.75),
+    0 0 20px rgba(184, 15, 30, 0.12);
+  border-radius: 10px;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.widget-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.widget-header svg {
+  width: 17px;
+  height: 17px;
+  color: #dc1a2a;
+}
+
+.widget-header h3 {
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #ffffff;
+  text-transform: uppercase;
+}
+
+/* Widget 1: Gráfico de ALERTAS */
+.alerts-chart-box {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 8px;
+  align-items: center;
+  height: 105px;
+}
+
+.alerts-y-axis {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: #6d7688;
+  text-align: right;
+  padding: 2px 0;
+}
+
+.alerts-svg-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.alerts-svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* Widget 2: PANORAMA DE TOXINAS (Barras de Progresso) */
+.toxins-bars-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  justify-content: center;
+  flex: 1;
+}
+
+.toxin-bar-row {
+  display: grid;
+  grid-template-columns: 78px 1fr 42px;
+  align-items: center;
+  gap: 10px;
+}
+
+.toxin-name {
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #dce2ee;
+}
+
+.toxin-track {
+  width: 100%;
+  height: 14px;
+  background: rgba(24, 26, 35, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 7px;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.toxin-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #6e0913 0%, #cf1426 60%, #ff2e43 100%);
+  box-shadow: 0 0 12px rgba(255, 42, 64, 0.65);
+  border-radius: 6px;
+  transition: width 0.5s ease;
+}
+
+.toxin-inner-pct {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: #ffffff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+.toxin-limit-pct {
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #e03242;
+  text-align: right;
+}
+
+/* Widget 3: COFRE (Medidor Circular / Gauge) */
+.vault-gauge-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  height: 108px;
+}
+
+.vault-gauge-svg {
+  width: 126px;
+  height: 100px;
+  overflow: visible;
+}
+
+.vault-gauge-value {
+  position: absolute;
+  top: 56%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 1px;
+  text-shadow: 0 0 12px rgba(255, 255, 255, 0.25);
+}
+
+/* Modal / Toast de Status da Configuração SQL */
+.sql-config-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: rgba(14, 16, 22, 0.96);
+  border: 1px solid #dc1a2a;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85), 0 0 20px rgba(220, 26, 42, 0.4);
+  color: #f0f3f8;
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  letter-spacing: 1px;
+  padding: 12px 20px;
+  border-radius: 8px;
+  z-index: 100;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.3s ease;
+}
+
+.sql-config-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Responsividade */
+@media (max-width: 1180px) {
+  .nivel3-workspace {
+    grid-template-columns: 230px 1fr;
+  }
+  .audit-split-grid {
+    grid-template-columns: 1fr;
+  }
+  .audit-vertical-divider {
+    display: none;
+  }
+  .bottom-widgets-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 860px) {
+  body.nivel3-body {
+    padding: 14px;
+  }
+  .rbac-preview-bar {
+    position: static;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .nivel3-workspace {
+    grid-template-columns: 1fr;
+  }
+  .history-inner-grid {
+    grid-template-columns: 1fr;
+  }
+}
