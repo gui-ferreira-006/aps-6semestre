@@ -1,6 +1,6 @@
 # Roadmap - APS (Atividades Práticas Supervisionadas)
 
-![Status](https://img.shields.io/badge/status-em%20planejamento-yellow?style=flat-square)
+![Status](https://img.shields.io/badge/status-em%20andamento-yellow?style=flat-square)
 ![Python](https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white)
 ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat-square&logo=javascript&logoColor=black)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white)
@@ -27,13 +27,15 @@ Configuração do repositório no GitHub (Privado, com acesso compartilhado).
 
 ---
 
-### Etapa 3 — Banco de Dados & Docker Compose Base
+### Etapa 3 — Banco de Dados & Docker Compose Base (Backend Python)
 
-![Pendente](https://img.shields.io/badge/status-pendente-lightgrey?style=flat-square)
+![Em Construção](https://img.shields.io/badge/status-em%20constru%C3%A7%C3%A3o-orange?style=flat-square)
 ![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=flat-square&logo=mysql&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white)
 
-Modelagem do Banco de Dados e criação do docker-compose.yml base.
+Modelagem do Banco de Dados MySQL e containerização no Docker para o Backend Python (onde o Frontend será compactado posteriormente).
+- [x] Estrutura de configuração e gramática fixa comentada no Frontend (`src/js/config/configuracao-banco.js` e `src/js/services/servico-api.js`) pronta para receber a conexão do Backend Python + MySQL
+- [ ] Disponibilização do banco MySQL e container Docker no Backend
 
 ---
 
@@ -45,7 +47,8 @@ Modelagem do Banco de Dados e criação do docker-compose.yml base.
 
 Prova de Conceito (PoC) da captura de vídeo no JS e envio para o Python.
 - [x] Módulo de captura de vídeo e retícula HUD em JavaScript (`src/js/scanner-facial.js`)
-- [ ] Envio dos frames para processamento no backend Python
+- [x] Gramática fixa comentada para envio dos frames Base64 ao Backend Python (`src/js/services/servico-api.js`)
+- [ ] Envio ativo dos frames após liberação do Backend Python / MySQL
 
 ---
 
@@ -65,12 +68,17 @@ Desenvolvimento do motor de biometria (Extração e comparação de faces).
 ![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=flat-square&logo=css3&logoColor=white)
 ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat-square&logo=javascript&logoColor=black)
 
-Desenvolvimento das telas Web finais e integração completa.
-- [x] Interface cibernética/militar de segurança (F.A.C.A) concluída
-- [x] Fluxo em duas etapas: Login por CPF/Senha ➔ Reconhecimento Facial
-- [x] Malha holográfica 3D e simulação de escaneamento em Canvas
-- [x] Relatório de entrega disponível em: [`docs/RELATORIO_FRONTEND.md`](docs/RELATORIO_FRONTEND.md)
-- [ ] Integração com as rotas de autenticação da API Python / Banco de Dados
+Desenvolvimento das telas Web finais, controle de menu por níveis e preparação para compactação no Python.
+- [x] Interface cibernética/militar de segurança (F.A.C.A) concluída (`index.html`)
+- [x] Fluxo em duas etapas: Login por CPF/Senha ➔ Reconhecimento Facial (sem acessos fictícios, aguardando SQL)
+- [x] Malha holográfica 3D e simulação de escaneamento em Canvas (`src/js/scanner-facial.js`)
+- [x] **Tela de Nível 3 — Auditoria Global e Monitoramento** (`nivel3.html`, `src/css/components/painel-nivel3.css`, `src/js/painel-nivel3.js`)
+- [x] **Menu Lateral Cumulativo por Role/Nível** (`src/js/components/menu-niveis.js`):
+  - **Nível 3:** exibe todo o menu (Nível 1 + Nível 2 + Nível 3)
+  - **Nível 2:** exibe tudo do Nível 2 e Nível 1
+  - **Nível 1:** exibe somente a parte do menu de Nível 1
+- [x] Relatório de entrega atualizado em: [`docs/RELATORIO_FRONTEND.md`](docs/RELATORIO_FRONTEND.md)
+- [ ] Compactação do Frontend junto ao Backend Python e ativação das rotas MySQL / Docker
 
 ---
 
