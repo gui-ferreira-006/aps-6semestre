@@ -20,3 +20,15 @@ Desktop.ini
 
 # Variáveis de ambiente com senhas reais (Segurança)
 .env
+.env.*
+!.env.example
+
+# Dados locais do MySQL (caso alguém troque o volume nomeado por bind mount)
+mysql_data/
+db_data/
+.docker-data/
+
+# Logs e dumps locais (scripts oficiais ficam em database/ e SÃO versionados)
+logs/
+*.log
+*.sql.bak
