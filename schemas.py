@@ -19,20 +19,23 @@ API.md, garantindo que:
     realistas e autoexplicativos.
 
 Organização:
-  1. Imports e Configurações Base
+  1. Imports, Configurações Base e Tipos Reutilizáveis (CPF, Base64)
   2. Schemas do Health Check (/ping)
-  3. Schemas de Autenticação Biométrica (/autenticar)
+  3. Schemas de Autenticação Multifator — CPF + Senha + Face (/autenticar)
   4. Schemas de Cadastro de Usuário (/cadastrar)
   5. Schemas do Cofre de Toxinas (/toxinas)
   6. Schemas Genéricos de Erro
+  7. Schemas de Falha (401) e Bloqueio (403) da Autenticação MFA
+  8. Schemas do Diagnóstico Biométrico Isolado — PIVC (/biometria/*)
 """
 
 from __future__ import annotations
 
+import re
 from datetime import datetime
-from typing import Any, List, Literal, Optional
+from typing import Annotated, Any, Dict, List, Literal, Optional, cast
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field, SecretStr
 
 
 # =============================================================================
@@ -51,6 +54,77 @@ class _SchemaBase(BaseModel):
         str_strip_whitespace=True,
         extra="forbid",
     )
+
+
+# ── Constantes de validação compartilhadas ──
+
+#: Número máximo de tentativas de autenticação antes do bloqueio (Roteiro v2).
+MAX_TENTATIVAS_AUTENTICACAO: int = 5
+
+#: Teto de caracteres aceitos em campos Base64 (~10 MB ≈ 7,5 MB binários).
+_TAMANHO_MAXIMO_BASE64: int = 10 * 1024 * 1024
+
+#: Cabeçalho Data URL gerado por canvas.toDataURL() (ex: data:image/jpeg;base64,).
+_REGEX_DATA_URL = re.compile(r"^data:[^,;]*(?:;[^,;]+)*;base64,", re.IGNORECASE)
+_REGEX_ESPACOS = re.compile(r"\s+")
+_REGEX_NAO_DIGITOS = re.compile(r"\D")
+
+
+def _normalizar_imagem_base64(valor: str) -> str:
+    """
+    Normaliza o campo de imagem: remove automaticamente um eventual prefixo
+    Data URL (``data:image/...;base64,``) e espaços/quebras de linha.
+
+    Política do Roteiro v2: o Frontend DEVE preferir o Base64 puro, mas o
+    backend é tolerante ao cabeçalho para reduzir atritos de integração
+    (o motor ``biometria.py`` aplica a mesma sanitização como defesa em
+    profundidade).
+    """
+    texto = _REGEX_ESPACOS.sub("", _REGEX_DATA_URL.sub("", valor.strip(), count=1))
+    if not texto:
+        raise ValueError("A imagem Base64 não pode ser vazia.")
+    return texto
+
+
+def _normalizar_cpf(valor: str) -> str:
+    """
+    Limpa a formatação do CPF (pontos, hífen, espaços) e valida o formato
+    de 11 dígitos. Ex.: ``"123.456.789-09"`` → ``"12345678909"``.
+
+    Observação: os dígitos verificadores NÃO são validados nesta etapa para
+    permitir massas de teste fictícias na PoC acadêmica.
+    """
+    digitos = _REGEX_NAO_DIGITOS.sub("", valor)
+    if len(digitos) != 11:
+        raise ValueError(
+            "O CPF deve conter exatamente 11 dígitos (com ou sem máscara)."
+        )
+    return digitos
+
+
+def mascarar_cpf(cpf: str) -> str:
+    """
+    Mascara o CPF para exibição/log em conformidade com a LGPD.
+    Ex.: ``"12345678909"`` → ``"***.456.789-**"``.
+    """
+    digitos = _REGEX_NAO_DIGITOS.sub("", cpf)
+    if len(digitos) != 11:
+        return "***.***.***-**"
+    return f"***.{digitos[3:6]}.{digitos[6:9]}-**"
+
+
+# ── Tipos anotados reutilizáveis (validação declarativa Pydantic v2) ──
+
+ImagemBase64Str = Annotated[str, AfterValidator(_normalizar_imagem_base64)]
+"""String Base64 de imagem JPEG/PNG (Data URL tolerado e removido)."""
+
+CpfStr = Annotated[str, AfterValidator(_normalizar_cpf)]
+"""CPF aceito com ou sem máscara; armazenado apenas com os 11 dígitos."""
+
+# Vetor de exemplo (128 floats) usado na documentação interativa.
+_EXEMPLO_VETOR_128D: List[float] = [
+    round(((i * 37) % 101 - 50) / 400.0, 4) for i in range(128)
+]
 
 
 # =============================================================================
@@ -98,54 +172,108 @@ class PingResponse(_SchemaBase):
 
 
 # =============================================================================
-# 3. SCHEMAS DE AUTENTICAÇÃO BIOMÉTRICA — POST /autenticar
+# 3. SCHEMAS DE AUTENTICAÇÃO MULTIFATOR (MFA 1:1) — POST /autenticar
 # =============================================================================
-# Fluxo PIVC: o Frontend captura o frame da webcam, converte para Base64 puro
-# (sem prefixo data:image/...) e envia ao backend, que submete a imagem ao
-# pipeline de detecção, extração de features e classificação. Em caso de
-# match com confiança suficiente, o backend devolve os dados do usuário e um
-# token JWT de sessão.
+# Roteiro Oficial v2 (index.html / principal.js): a autenticação combina
+# TRÊS fatores em uma única requisição:
+#   1. Algo que o operador SABE   → senha
+#   2. Algo que o operador POSSUI → CPF (identificador do cadastro)
+#   3. Algo que o operador É      → biometria facial (frame da webcam)
+#
+# O CPF localiza o vetor biométrico de referência no banco, permitindo uma
+# VERIFICAÇÃO 1:1 (muito mais segura e rápida que a identificação 1:N). Cada
+# falha (senha ou face) consome uma tentativa; após 5 falhas consecutivas a
+# conta é bloqueada (HTTP 403 — ver Seção 7).
 # =============================================================================
 
 class AutenticacaoRequest(_SchemaBase):
     """
-    Payload de entrada do endpoint de autenticação facial (POST /autenticar).
+    Payload de entrada do endpoint de autenticação multifator (POST /autenticar).
 
-    O campo `imagem_base64` deve conter **exclusivamente** a string Base64 pura
-    da captura JPEG/PNG — sem o prefixo ``data:image/...;base64,``.
+    * ``cpf``: aceito com ou sem máscara — é normalizado para 11 dígitos.
+    * ``senha``: tratada como ``SecretStr`` (nunca aparece em logs/repr).
+    * ``imagem_base64``: frame JPEG/PNG da webcam. O Base64 puro é o formato
+      recomendado; um eventual prefixo ``data:image/...;base64,`` é removido
+      automaticamente.
     """
 
-    imagem_base64: str = Field(
+    cpf: CpfStr = Field(
+        ...,
+        min_length=11,
+        max_length=14,
+        description=(
+            "CPF do servidor (identificador do usuário), com ou sem máscara. "
+            "Normalizado para 11 dígitos."
+        ),
+        examples=["123.456.789-09"],
+    )
+    senha: SecretStr = Field(
         ...,
         min_length=1,
+        max_length=128,
+        description="Senha pessoal do servidor (fator de conhecimento).",
+        examples=["Faca@2026"],
+    )
+    imagem_base64: ImagemBase64Str = Field(
+        ...,
+        min_length=1,
+        max_length=_TAMANHO_MAXIMO_BASE64,
         description=(
-            "String Base64 pura da captura facial (JPEG ou PNG). "
-            "NÃO incluir o prefixo 'data:image/...;base64,'."
+            "Captura facial da webcam em Base64 (JPEG ou PNG). Recomendado "
+            "enviar Base64 puro; o prefixo Data URL é tolerado e removido."
         ),
         examples=["/9j/4AAQSkZJRgABAQEASABIAAD..."],
     )
 
-    @field_validator("imagem_base64")
-    @classmethod
-    def _rejeitar_prefixo_data_url(cls, valor: str) -> str:
-        """
-        Valida que a string Base64 NÃO contém o cabeçalho Data URL.
-        Rejeita proativamente payloads incorretos vindos do Frontend,
-        conforme a regra documentada na Seção 2 do API.md.
-        """
-        if valor.startswith("data:"):
-            raise ValueError(
-                "O campo 'imagem_base64' não deve conter o prefixo "
-                "'data:image/...;base64,'. Envie apenas a string Base64 pura."
-            )
-        return valor
-
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "imagem_base64": "/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP..."
+                "cpf": "123.456.789-09",
+                "senha": "Faca@2026",
+                "imagem_base64": "/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP...",
             }
         }
+    )
+
+
+# ── Sub-modelo: métricas da Fase 5 (classificação) para telemetria ──
+
+class MetricasBiometricasResponse(_SchemaBase):
+    """
+    Métricas da verificação biométrica 1:1 (Fase 5 do PIVC). Reutilizado na
+    resposta de sucesso, nos detalhes de falha e nas rotas de diagnóstico.
+    """
+
+    reconhecido: bool = Field(
+        ...,
+        description="True se distância_euclidiana <= tolerância (match).",
+        examples=[True],
+    )
+    distancia_euclidiana: float = Field(
+        ...,
+        ge=0,
+        description=(
+            "Distância Euclidiana (norma L2) entre o vetor 128D capturado e o "
+            "de referência, arredondada para 4 casas decimais."
+        ),
+        examples=[0.3412],
+    )
+    tolerancia: float = Field(
+        ...,
+        gt=0,
+        le=1,
+        description="Limiar de decisão aplicado (FACE_RECOGNITION_TOLERANCE).",
+        examples=[0.5],
+    )
+    confianca_percentual: float = Field(
+        ...,
+        ge=0,
+        le=100,
+        description=(
+            "Similaridade percentual derivada da distância (apenas "
+            "telemetria; 50% corresponde exatamente ao limiar)."
+        ),
+        examples=[93.87],
     )
 
 
@@ -196,9 +324,10 @@ class UsuarioAutenticadoResponse(_SchemaBase):
 
 class AutenticacaoSucessoResponse(_SchemaBase):
     """
-    Resposta retornada quando a autenticação biométrica é bem-sucedida
-    (HTTP 200). Contém o token JWT, metadados de expiração e os dados
-    completos do usuário identificado.
+    Resposta retornada quando os TRÊS fatores (CPF, senha e face) são
+    validados com sucesso (HTTP 200). Contém o token JWT, metadados de
+    expiração, os dados funcionais do usuário e, opcionalmente, as métricas
+    da verificação biométrica para telemetria.
     """
 
     sucesso: Literal[True] = Field(
@@ -208,7 +337,7 @@ class AutenticacaoSucessoResponse(_SchemaBase):
     mensagem: str = Field(
         ...,
         description="Mensagem explicativa do resultado da autenticação.",
-        examples=["Identificação biométrica concluída com sucesso."],
+        examples=["Autenticação multifator concluída com sucesso."],
     )
     token: str = Field(
         ...,
@@ -233,12 +362,19 @@ class AutenticacaoSucessoResponse(_SchemaBase):
         ...,
         description="Objeto contendo os dados funcionais do servidor identificado.",
     )
+    biometria: Optional[MetricasBiometricasResponse] = Field(
+        default=None,
+        description=(
+            "Métricas opcionais da verificação facial 1:1 (distância "
+            "euclidiana, tolerância e confiança) para telemetria/log."
+        ),
+    )
 
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
                 "sucesso": True,
-                "mensagem": "Identificação biométrica concluída com sucesso.",
+                "mensagem": "Autenticação multifator concluída com sucesso.",
                 "token": (
                     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
                     "eyJzdWIiOiIxIiwibm9tZSI6Ikd1aWxoZXJtZSIsIm5pdmVsIjoxfQ."
@@ -254,6 +390,12 @@ class AutenticacaoSucessoResponse(_SchemaBase):
                     "divisao": "Divisão de Contenção Microbiológica",
                     "nivel_acesso": 1,
                 },
+                "biometria": {
+                    "reconhecido": True,
+                    "distancia_euclidiana": 0.3412,
+                    "tolerancia": 0.5,
+                    "confianca_percentual": 93.87,
+                },
             }
         }
     )
@@ -263,8 +405,8 @@ class AutenticacaoSucessoResponse(_SchemaBase):
 # 4. SCHEMAS DE CADASTRO DE USUÁRIO — POST /cadastrar
 # =============================================================================
 # Permite registrar um novo servidor público no sistema, associando seus
-# dados funcionais a um vetor de características faciais extraído da foto
-# de referência de alta qualidade enviada em Base64 puro.
+# dados funcionais e credenciais (CPF + senha) ao vetor de características
+# faciais (128D) extraído da foto de referência enviada em Base64.
 # =============================================================================
 
 class UsuarioCadastroRequest(_SchemaBase):
@@ -278,6 +420,20 @@ class UsuarioCadastroRequest(_SchemaBase):
         min_length=3,
         description="Nome completo do servidor público (mínimo 3 caracteres).",
         examples=["Júlia Fernandes"],
+    )
+    cpf: CpfStr = Field(
+        ...,
+        min_length=11,
+        max_length=14,
+        description="CPF do servidor (com ou sem máscara; identificador único de login).",
+        examples=["987.654.321-00"],
+    )
+    senha: SecretStr = Field(
+        ...,
+        min_length=8,
+        max_length=128,
+        description="Senha inicial do servidor (mínimo 8 caracteres). Será armazenada como hash.",
+        examples=["Faca@2026"],
     )
     matricula: str = Field(
         ...,
@@ -303,32 +459,24 @@ class UsuarioCadastroRequest(_SchemaBase):
         ),
         examples=[2],
     )
-    imagem_base64: str = Field(
+    imagem_base64: ImagemBase64Str = Field(
         ...,
         min_length=1,
+        max_length=_TAMANHO_MAXIMO_BASE64,
         description=(
-            "Foto de referência nítida da face em Base64 puro para "
-            "extração do vetor de características biométricas. "
-            "NÃO incluir o prefixo 'data:image/...;base64,'."
+            "Foto de referência nítida da face em Base64 para extração do "
+            "vetor de características biométricas (Fases 1 a 4 do PIVC). "
+            "Recomendado Base64 puro; o prefixo Data URL é tolerado."
         ),
         examples=["/9j/4AAQSkZJRgABAQEASABIAAD..."],
     )
-
-    @field_validator("imagem_base64")
-    @classmethod
-    def _rejeitar_prefixo_data_url(cls, valor: str) -> str:
-        """Reusa a mesma regra de rejeição de Data URL do endpoint /autenticar."""
-        if valor.startswith("data:"):
-            raise ValueError(
-                "O campo 'imagem_base64' não deve conter o prefixo "
-                "'data:image/...;base64,'. Envie apenas a string Base64 pura."
-            )
-        return valor
 
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
                 "nome": "Júlia Fernandes",
+                "cpf": "987.654.321-00",
+                "senha": "Faca@2026",
                 "matricula": "R101BF1",
                 "cargo_id": 2,
                 "divisao_id": 1,
@@ -357,6 +505,11 @@ class UsuarioCriadoResponse(_SchemaBase):
         ...,
         description="Nome completo do servidor cadastrado.",
         examples=["Júlia Fernandes"],
+    )
+    cpf_mascarado: str = Field(
+        ...,
+        description="CPF mascarado conforme a LGPD (ver ``mascarar_cpf``).",
+        examples=["***.654.321-**"],
     )
     matricula: str = Field(
         ...,
@@ -415,6 +568,7 @@ class UsuarioCadastroResponse(_SchemaBase):
                 "usuario": {
                     "id": 2,
                     "nome": "Júlia Fernandes",
+                    "cpf_mascarado": "***.654.321-**",
                     "matricula": "R101BF1",
                     "cargo_id": 2,
                     "divisao_id": 1,
@@ -613,9 +767,12 @@ class ErroDetalheResponse(_SchemaBase):
         ...,
         description=(
             "Código de erro legível por máquina para tratamento no Frontend "
-            "(ex: NO_FACE_DETECTED, MULTIPLE_FACES_DETECTED, "
-            "FACE_NOT_RECOGNIZED, TOKEN_INVALID_OR_EXPIRED, "
-            "INSUFFICIENT_PRIVILEGES, MATRICULA_ALREADY_EXISTS, VALIDATION_ERROR)."
+            "(ex: INVALID_IMAGE, NO_FACE_DETECTED, MULTIPLE_FACES_DETECTED, "
+            "INVALID_FACE_VECTOR, FEATURE_EXTRACTION_FAILED, "
+            "INVALID_CREDENTIALS, FACE_NOT_RECOGNIZED, ACCOUNT_LOCKED, "
+            "TOKEN_INVALID_OR_EXPIRED, INSUFFICIENT_PRIVILEGES, "
+            "CPF_ALREADY_EXISTS, MATRICULA_ALREADY_EXISTS, VALIDATION_ERROR, "
+            "BIOMETRIC_ENGINE_UNAVAILABLE)."
         ),
         examples=["NO_FACE_DETECTED"],
     )
@@ -641,7 +798,7 @@ class ErroDetalheResponse(_SchemaBase):
 class ErroResponse(_SchemaBase):
     """
     Envelope padronizado para **todas** as respostas de erro da API F.A.C.A.
-    Utilizado em respostas HTTP 400, 401, 403, 409 e 422.
+    Utilizado em respostas HTTP 400, 401, 403, 409, 422, 500 e 503.
     """
 
     sucesso: Literal[False] = Field(
@@ -683,15 +840,13 @@ class ErroResponse(_SchemaBase):
                 {
                     "sucesso": False,
                     "erro": {
-                        "codigo": "FACE_NOT_RECOGNIZED",
+                        "codigo": "INVALID_IMAGE",
                         "mensagem": (
-                            "Acesso Negado: Rosto não identificado na base "
-                            "de funcionários autorizados."
+                            "A imagem enviada é inválida, corrompida ou está "
+                            "vazia. Envie uma captura JPEG ou PNG codificada "
+                            "em Base64."
                         ),
-                        "detalhes": {
-                            "confianca": 0.42,
-                            "limiar_minimo": 0.75,
-                        },
+                        "detalhes": None,
                     },
                 },
                 {
@@ -719,3 +874,331 @@ class ErroResponse(_SchemaBase):
             ]
         }
     )
+
+
+# =============================================================================
+# 7. SCHEMAS DE FALHA (401) E BLOQUEIO (403) DA AUTENTICAÇÃO MFA
+# =============================================================================
+# Política de tentativas do Roteiro v2:
+#   * Cada falha de senha (INVALID_CREDENTIALS) ou de face
+#     (FACE_NOT_RECOGNIZED) consome UMA tentativa → HTTP 401 informando
+#     ``tentativas_restantes``.
+#   * Por segurança, a mensagem de INVALID_CREDENTIALS não revela se o erro
+#     foi no CPF ou na senha (evita enumeração de usuários).
+#   * Ao atingir 5 falhas consecutivas, a conta é bloqueada → HTTP 403 com
+#     ``bloqueado: true`` e mensagem de ALERTA DE AMEAÇA.
+#   * Erros de CAPTURA (400 — sem rosto, múltiplos rostos, imagem inválida)
+#     NÃO consomem tentativas, pois não indicam tentativa de fraude.
+# Ambos os schemas estendem o envelope ``ErroResponse`` (Seção 6), mantendo
+# compatibilidade com o tratamento genérico de erros do Frontend.
+# =============================================================================
+
+class AutenticacaoFalhaResponse(ErroResponse):
+    """
+    Resposta de falha de autenticação recuperável (HTTP 401): credenciais
+    inválidas ou biometria não correspondente, ainda com tentativas restantes.
+    """
+
+    bloqueado: Literal[False] = Field(
+        default=False,
+        description="Indica que a conta AINDA NÃO foi bloqueada.",
+    )
+    tentativas_restantes: int = Field(
+        ...,
+        ge=0,
+        le=MAX_TENTATIVAS_AUTENTICACAO,
+        description="Quantidade de tentativas restantes antes do bloqueio.",
+        examples=[3],
+    )
+    tentativas_maximas: int = Field(
+        default=MAX_TENTATIVAS_AUTENTICACAO,
+        ge=1,
+        description="Limite de tentativas consecutivas antes do bloqueio.",
+        examples=[MAX_TENTATIVAS_AUTENTICACAO],
+    )
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "sucesso": False,
+                    "bloqueado": False,
+                    "tentativas_restantes": 4,
+                    "tentativas_maximas": 5,
+                    "erro": {
+                        "codigo": "INVALID_CREDENTIALS",
+                        "mensagem": "CPF ou senha inválidos.",
+                        "detalhes": None,
+                    },
+                },
+                {
+                    "sucesso": False,
+                    "bloqueado": False,
+                    "tentativas_restantes": 3,
+                    "tentativas_maximas": 5,
+                    "erro": {
+                        "codigo": "FACE_NOT_RECOGNIZED",
+                        "mensagem": (
+                            "Acesso Negado: a biometria facial não "
+                            "corresponde ao usuário informado."
+                        ),
+                        "detalhes": {
+                            "reconhecido": False,
+                            "distancia_euclidiana": 0.7231,
+                            "tolerancia": 0.5,
+                            "confianca_percentual": 27.7,
+                        },
+                    },
+                },
+            ]
+        }
+    )
+
+
+class AutenticacaoBloqueadaResponse(ErroResponse):
+    """
+    Resposta de bloqueio de segurança (HTTP 403) emitida após 5 falhas
+    consecutivas — ou em qualquer nova tentativa enquanto o bloqueio durar.
+    """
+
+    bloqueado: Literal[True] = Field(
+        default=True,
+        description="Indica que a conta está BLOQUEADA por suspeita de ameaça.",
+    )
+    tentativas_restantes: Literal[0] = Field(
+        default=0,
+        description="Sempre 0 quando a conta está bloqueada.",
+    )
+    bloqueado_ate: Optional[datetime] = Field(
+        default=None,
+        description=(
+            "Instante UTC até o qual o bloqueio permanece ativo "
+            "(null = bloqueio por tempo indeterminado / desbloqueio manual)."
+        ),
+        examples=["2026-10-19T04:45:00Z"],
+    )
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "sucesso": False,
+                "bloqueado": True,
+                "tentativas_restantes": 0,
+                "bloqueado_ate": "2026-10-19T04:45:00Z",
+                "erro": {
+                    "codigo": "ACCOUNT_LOCKED",
+                    "mensagem": (
+                        "ALERTA DE AMEAÇA: acesso bloqueado após 5 tentativas "
+                        "de autenticação malsucedidas. A ocorrência foi "
+                        "registrada e a equipe de segurança do cofre foi "
+                        "notificada."
+                    ),
+                    "detalhes": {"tentativas_falhas": 5},
+                },
+            }
+        }
+    )
+
+
+# =============================================================================
+# 8. SCHEMAS DO DIAGNÓSTICO BIOMÉTRICO ISOLADO — PIVC (/biometria/*)
+# =============================================================================
+# Rotas técnicas SEM banco de dados para validar as 5 fases do PIVC via
+# Swagger (/docs) antes de o MySQL estar populado:
+#   * GET  /biometria/status          → parâmetros ativos do motor
+#   * POST /biometria/extrair-vetor   → Fases 1–4 (vetor 128D + ROI)
+#   * POST /biometria/comparar-teste  → Fases 1–5 entre DUAS imagens
+#   * POST /biometria/verificar-vetor → Fases 1–5 imagem × vetor (simula o
+#                                       vetor que virá do banco)
+# =============================================================================
+
+class CaixaDelimitadoraResponse(_SchemaBase):
+    """ROI da face (Fase 3) em pixels da imagem ORIGINAL enviada."""
+
+    top: int = Field(..., ge=0, description="Coordenada y da borda superior.", examples=[112])
+    right: int = Field(..., ge=0, description="Coordenada x da borda direita.", examples=[418])
+    bottom: int = Field(..., ge=0, description="Coordenada y da borda inferior.", examples=[341])
+    left: int = Field(..., ge=0, description="Coordenada x da borda esquerda.", examples=[189])
+
+
+class DimensoesImagemResponse(_SchemaBase):
+    """Dimensões de uma matriz de imagem em pixels."""
+
+    largura: int = Field(..., ge=1, examples=[1280])
+    altura: int = Field(..., ge=1, examples=[720])
+
+
+class BiometriaStatusResponse(_SchemaBase):
+    """Parâmetros operacionais ativos do motor biométrico."""
+
+    motor_disponivel: bool = Field(
+        ...,
+        description="True se o face_recognition (dlib) foi carregado com sucesso.",
+    )
+    tolerancia: float = Field(..., description="FACE_RECOGNITION_TOLERANCE ativa.", examples=[0.5])
+    modelo_deteccao: Literal["hog", "cnn"] = Field(..., examples=["hog"])
+    upsample: int = Field(..., ge=0, examples=[1])
+    dimensao_maxima_px: int = Field(..., ge=1, examples=[800])
+    dimensao_vetor: Literal[128] = Field(default=128)
+
+
+class BiometriaExtracaoRequest(_SchemaBase):
+    """Payload de POST /biometria/extrair-vetor (Fases 1 → 4)."""
+
+    imagem_base64: ImagemBase64Str = Field(
+        ...,
+        min_length=1,
+        max_length=_TAMANHO_MAXIMO_BASE64,
+        description="Imagem JPEG/PNG em Base64 (Data URL tolerado).",
+        examples=["/9j/4AAQSkZJRgABAQEASABIAAD..."],
+    )
+    num_jitters: int = Field(
+        default=1,
+        ge=1,
+        le=10,
+        description=(
+            "Reamostragens da face cuja média forma o descritor (maior = "
+            "mais estável e mais lento)."
+        ),
+    )
+
+
+class BiometriaExtracaoResponse(_SchemaBase):
+    """Resultado das Fases 1 → 4 do PIVC sobre uma única imagem."""
+
+    sucesso: Literal[True] = Field(default=True)
+    mensagem: str = Field(..., examples=["Vetor biométrico 128D extraído com sucesso."])
+    rosto_detectado: Literal[True] = Field(default=True)
+    quantidade_rostos: Literal[1] = Field(default=1)
+    localizacao_rosto: CaixaDelimitadoraResponse = Field(
+        ...,
+        description="Caixa delimitadora (top, right, bottom, left) na imagem original.",
+    )
+    dimensoes_originais: DimensoesImagemResponse
+    dimensoes_processadas: DimensoesImagemResponse
+    fator_escala: float = Field(..., gt=0, le=1, examples=[0.625])
+    iluminacao_normalizada: bool = Field(
+        ...,
+        description="True se o CLAHE (Fase 2) foi aplicado por baixa luminosidade/contraste.",
+    )
+    dimensao_vetor: Literal[128] = Field(default=128)
+    vetor_caracteristicas: List[float] = Field(
+        ...,
+        min_length=128,
+        max_length=128,
+        description="Descritor facial de 128 dimensões (ResNet-34 dlib).",
+    )
+    tempos_fases_ms: Dict[str, float] = Field(
+        ...,
+        description="Latência de cada fase do pipeline em milissegundos.",
+        examples=[{
+            "fase1_aquisicao": 4.1,
+            "fase2_preprocessamento": 2.3,
+            "fase3_segmentacao": 182.5,
+            "fase4_extracao": 61.7,
+        }],
+    )
+    tempo_total_ms: float = Field(..., ge=0, examples=[250.6])
+
+    model_config = ConfigDict(
+        json_schema_extra=cast(Any, {
+            "example": {
+                "sucesso": True,
+                "mensagem": "Vetor biométrico 128D extraído com sucesso.",
+                "rosto_detectado": True,
+                "quantidade_rostos": 1,
+                "localizacao_rosto": {"top": 112, "right": 418, "bottom": 341, "left": 189},
+                "dimensoes_originais": {"largura": 1280, "altura": 720},
+                "dimensoes_processadas": {"largura": 800, "altura": 450},
+                "fator_escala": 0.625,
+                "iluminacao_normalizada": False,
+                "dimensao_vetor": 128,
+                "vetor_caracteristicas": _EXEMPLO_VETOR_128D,
+                "tempos_fases_ms": {
+                    "fase1_aquisicao": 4.1,
+                    "fase2_preprocessamento": 2.3,
+                    "fase3_segmentacao": 182.5,
+                    "fase4_extracao": 61.7,
+                },
+                "tempo_total_ms": 250.6,
+            }
+        })
+    )
+
+
+class BiometriaComparacaoRequest(_SchemaBase):
+    """Payload de POST /biometria/comparar-teste (1:1 entre duas imagens)."""
+
+    imagem_referencia_base64: ImagemBase64Str = Field(
+        ...,
+        min_length=1,
+        max_length=_TAMANHO_MAXIMO_BASE64,
+        description="Imagem de referência (simula a foto do cadastro).",
+        examples=["/9j/4AAQSkZJRgABAQEASABIAAD..."],
+    )
+    imagem_teste_base64: ImagemBase64Str = Field(
+        ...,
+        min_length=1,
+        max_length=_TAMANHO_MAXIMO_BASE64,
+        description="Imagem de teste (simula o frame da webcam no login).",
+        examples=["/9j/4AAQSkZJRgABAQEASABIAAD..."],
+    )
+    tolerancia: Optional[float] = Field(
+        default=None,
+        gt=0,
+        le=1,
+        description="Limiar opcional; se omitido usa FACE_RECOGNITION_TOLERANCE (0.50).",
+        examples=[0.5],
+    )
+
+
+class BiometriaComparacaoResponse(_SchemaBase):
+    """
+    Resultado da comparação 1:1 entre duas imagens (Fases 1 → 5). Sendo uma
+    rota de diagnóstico, um NÃO-match retorna HTTP 200 com ``reconhecido: false``.
+    """
+
+    sucesso: Literal[True] = Field(default=True)
+    mensagem: str = Field(..., examples=["As faces pertencem à mesma pessoa (match)."])
+    resultado: MetricasBiometricasResponse
+    localizacao_rosto_referencia: CaixaDelimitadoraResponse
+    localizacao_rosto_teste: CaixaDelimitadoraResponse
+    tempo_total_ms: float = Field(..., ge=0, examples=[498.2])
+
+
+class BiometriaVerificacaoRequest(_SchemaBase):
+    """
+    Payload de POST /biometria/verificar-vetor: imagem × vetor 128D de
+    referência (exatamente o fluxo que o /autenticar usará com o banco).
+    """
+
+    imagem_base64: ImagemBase64Str = Field(
+        ...,
+        min_length=1,
+        max_length=_TAMANHO_MAXIMO_BASE64,
+        description="Frame da webcam em Base64 (Data URL tolerado).",
+        examples=["/9j/4AAQSkZJRgABAQEASABIAAD..."],
+    )
+    vetor_referencia: List[float] = Field(
+        ...,
+        min_length=128,
+        max_length=128,
+        description="Vetor 128D de referência (ex.: obtido em /biometria/extrair-vetor).",
+        examples=[_EXEMPLO_VETOR_128D],
+    )
+    tolerancia: Optional[float] = Field(
+        default=None,
+        gt=0,
+        le=1,
+        description="Limiar opcional; se omitido usa FACE_RECOGNITION_TOLERANCE (0.50).",
+        examples=[0.5],
+    )
+
+
+class BiometriaVerificacaoResponse(_SchemaBase):
+    """Resultado da verificação 1:1 imagem × vetor (Fases 1 → 5)."""
+
+    sucesso: Literal[True] = Field(default=True)
+    mensagem: str = Field(..., examples=["Biometria compatível com o vetor de referência."])
+    resultado: MetricasBiometricasResponse
+    tempo_total_ms: float = Field(..., ge=0, examples=[251.3])

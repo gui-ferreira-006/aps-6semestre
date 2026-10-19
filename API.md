@@ -37,16 +37,16 @@ O FastAPI está pré-configurado com `CORSMiddleware` liberando origens locais d
 
 O motor de Visão Computacional (OpenCV/NumPy) processa buffers binários puros de imagem. Para evitar overhead de conversão desnecessário no servidor:
 
-### ⚠️ Regra do Base64 Puro:
-O campo `imagem_base64` **NÃO** deve conter o prefixo Data URL gerado por métodos como `canvas.toDataURL()`.
+### ⚠️ Regra do Base64 e Tolerância de Integração:
+O campo `imagem_base64` idealmente deve conter a string Base64 pura. No entanto, para evitar quebras de integração caso o Frontend envie o cabeçalho gerado por `canvas.toDataURL()`, o backend **sanitiza e remove automaticamente** qualquer prefixo `data:image/...;base64,`, além de quebras de linha e espaços.
 
-* ❌ **Incorreto (com prefixo):**
-  ```text
-  data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD...
-  ```
-* ✅ **Correto (Base64 puro):**
+* 💡 **Recomendado (Base64 puro):**
   ```text
   /9j/4AAQSkZJRgABAQEASABIAAD...
+  ```
+* 🛡️ **Tolerado (com cabeçalho Data URL — sanitizado automaticamente pelo backend):**
+  ```text
+  data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD...
   ```
 
 ### ✂️ Snippet Utilitário para o Frontend (JavaScript):
@@ -111,9 +111,14 @@ Accept: application/json
 
 ---
 
-### 4.2. Autenticação Biométrica Facial (Endpoint Principal)
+### 4.2. Autenticação Multifator (MFA 1:1) — CPF + Senha + Biometria Facial
 
-Recebe o snapshot do rosto capturado pela webcam do operador, submete ao pipeline de PIVC (aquisição, pré-processamento, segmentação com Haar Cascade / DNN, extração de características e classificação) e, em caso de match, gera o token de sessão.
+Implementa o fluxo de autenticação multifator exigido pelo Roteiro Oficial v2 do Ministério do Meio Ambiente, combinando três fatores de autenticação:
+1. **Algo que o operador POSSUI:** CPF (identificador funcional único).
+2. **Algo que o operador SABE:** Senha pessoal.
+3. **Algo que o operador É:** Biometria Facial (frame capturado pela webcam).
+
+O CPF localiza o vetor de referência previamente cadastrado no banco, permitindo realizar uma **Verificação 1:1** de alta velocidade e precisão (calculando a Distância Euclidiana em R^128). Cada falha de senha ou reconhecimento facial consome uma tentativa. Após **5 tentativas consecutivas falhas**, o sistema bloqueia o acesso preventivamente (`403 Forbidden`).
 
 * **Método:** `POST`
 * **Rota:** `/autenticar`
@@ -128,23 +133,27 @@ Accept: application/json
 #### Corpo da Requisição (Request Body)
 ```json
 {
-  "imagem_base64": "/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCA..."
+  "cpf": "123.456.789-09",
+  "senha": "Faca@2026",
+  "imagem_base64": "/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP..."
 }
 ```
 
 | Campo | Tipo | Obrigatório | Descrição |
 |---|:---:|:---:|---|
-| `imagem_base64` | `string` | **Sim** | String codificada em Base64 puro da captura da face (JPEG ou PNG). |
+| `cpf` | `string` | **Sim** | CPF do servidor com ou sem máscara (11 dígitos). |
+| `senha` | `string` | **Sim** | Senha pessoal de acesso do operador. |
+| `imagem_base64` | `string` | **Sim** | Frame capturado da webcam em Base64 (JPEG ou PNG). Data URL é tolerado e sanitizado. |
 
 ---
 
 #### Resposta de Sucesso (`200 OK`)
-Ocorre quando exatamente um rosto é detectado e reconhecido contra o banco biométrico com taxa de confiança satisfatória.
+Ocorre quando as credenciais (CPF + Senha) são válidas e exatamente um rosto é detectado e verificado com distância euclidiana menor ou igual à tolerância estipulada (padrão `0.50`).
 
 ```json
 {
   "sucesso": true,
-  "mensagem": "Identificação biométrica concluída com sucesso.",
+  "mensagem": "Autenticação multifator concluída com sucesso.",
   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwibm9tZSI6Ikd1aWxoZXJtZSIsIm5pdmVsIjoxfQ.mock_signature_hash",
   "token_tipo": "Bearer",
   "expira_em_segundos": 28800,
@@ -155,82 +164,114 @@ Ocorre quando exatamente um rosto é detectado e reconhecido contra o banco biom
     "cargo": "Engenheiro de Bioproteção",
     "divisao": "Divisão de Contenção Microbiológica",
     "nivel_acesso": 1
+  },
+  "biometria": {
+    "reconhecido": true,
+    "distancia_euclidiana": 0.3412,
+    "tolerancia": 0.5,
+    "confianca_percentual": 93.87
   }
 }
 ```
 
-> 📌 **Ação do Frontend:** Armazenar `token` e `usuario` no `sessionStorage` ou `localStorage` para injetar nas chamadas subsequentes e controlar o layout de acordo com `nivel_acesso`.
+> 📌 **Ação do Frontend:** Armazenar `token` e `usuario` no `sessionStorage` para injetar nas chamadas subsequentes e controlar o layout de acordo com `nivel_acesso`.
 
 ---
 
 #### Respostas de Erro Mapeadas
 
-O backend categoriza com precisão os erros biométricos para que o frontend exiba feedbacks claros para o usuário na tela da câmera.
+##### 1. Erros de Captura Facial (`400 Bad Request`)
+*Não consomem tentativas de login*, pois decorrem de problemas de posicionamento ou iluminação:
 
-##### 1. Nenhum rosto detectado na foto (`400 Bad Request`)
-Disparado quando o algoritmo de segmentação não encontra landmarks ou faces na área enquadrada (ex: usuário fora da câmera, baixa iluminação, oclusão severa).
-
-```json
-{
-  "sucesso": false,
-  "erro": {
-    "codigo": "NO_FACE_DETECTED",
-    "mensagem": "Nenhum rosto foi detectado na imagem. Centralize seu rosto no enquadramento e certifique-se de estar em um ambiente iluminado.",
-    "detalhes": {
-      "rostos_encontrados": 0
+* **Nenhum rosto detectado (`NO_FACE_DETECTED`):**
+  ```json
+  {
+    "sucesso": false,
+    "erro": {
+      "codigo": "NO_FACE_DETECTED",
+      "mensagem": "Nenhum rosto foi detectado na imagem. Centralize seu rosto no enquadramento e certifique-se de estar em um ambiente iluminado.",
+      "detalhes": { "rostos_encontrados": 0 }
     }
   }
-}
-```
+  ```
 
-##### 2. Mais de um rosto detectado (`400 Bad Request`)
-Disparado pela regra de segurança do cofre: **apenas uma pessoa pode ingressar por vez**. Se houver transeuntes ou duas pessoas no campo da câmera, o acesso é barrado preventivamente.
-
-```json
-{
-  "sucesso": false,
-  "erro": {
-    "codigo": "MULTIPLE_FACES_DETECTED",
-    "mensagem": "Múltiplos rostos detectados (2). Por motivos de segurança, apenas uma pessoa deve estar visível para a autenticação.",
-    "detalhes": {
-      "rostos_encontrados": 2
+* **Múltiplos rostos no enquadramento (`MULTIPLE_FACES_DETECTED`):**
+  ```json
+  {
+    "sucesso": false,
+    "erro": {
+      "codigo": "MULTIPLE_FACES_DETECTED",
+      "mensagem": "Múltiplos rostos detectados (2). Por motivos de segurança, apenas uma pessoa deve estar visível para a autenticação.",
+      "detalhes": { "rostos_encontrados": 2 }
     }
   }
-}
-```
+  ```
 
-##### 3. Rosto não reconhecido no banco (`401 Unauthorized`)
-Disparado quando um único rosto foi detectado com sucesso, porém a distância vetorial / score do classificador não atingiu a margem de confiança com nenhum registro cadastrado.
-
-```json
-{
-  "sucesso": false,
-  "erro": {
-    "codigo": "FACE_NOT_RECOGNIZED",
-    "mensagem": "Acesso Negado: Rosto não identificado na base de funcionários autorizados.",
-    "detalhes": {
-      "confianca": 0.42,
-      "limiar_minimo": 0.75
+* **Imagem Base64 corrompida ou vazia (`INVALID_IMAGE`):**
+  ```json
+  {
+    "sucesso": false,
+    "erro": {
+      "codigo": "INVALID_IMAGE",
+      "mensagem": "A imagem enviada é inválida, corrompida ou está vazia.",
+      "detalhes": null
     }
   }
-}
-```
+  ```
 
-##### 4. Payload com Formato Inválido (`422 Unprocessable Entity`)
-Erro padrão retornado pelo Pydantic caso o campo `imagem_base64` esteja ausente ou vazio.
+##### 2. Falhas de Autenticação com Tentativas Restantes (`401 Unauthorized`)
+Consomem uma tentativa. Informam `tentativas_restantes` para alertar o operador na interface:
 
-```json
-{
-  "sucesso": false,
-  "erro": {
-    "codigo": "VALIDATION_ERROR",
-    "mensagem": "Corpo da requisição inválido.",
-    "detalhes": [
-      {
-        "campo": "imagem_base64",
-        "mensagem": "O campo 'imagem_base64' é obrigatório e não pode ser vazio."
+* **Credenciais inválidas (`INVALID_CREDENTIALS`):**
+  ```json
+  {
+    "sucesso": false,
+    "bloqueado": false,
+    "tentativas_restantes": 4,
+    "tentativas_maximas": 5,
+    "erro": {
+      "codigo": "INVALID_CREDENTIALS",
+      "mensagem": "CPF ou senha inválidos.",
+      "detalhes": null
+    }
+  }
+  ```
+
+* **Rosto não reconhecido / Divergência Biométrica (`FACE_NOT_RECOGNIZED`):**
+  ```json
+  {
+    "sucesso": false,
+    "bloqueado": false,
+    "tentativas_restantes": 3,
+    "tentativas_maximas": 5,
+    "erro": {
+      "codigo": "FACE_NOT_RECOGNIZED",
+      "mensagem": "Acesso Negado: a biometria facial não corresponde ao usuário informado.",
+      "detalhes": {
+        "reconhecido": false,
+        "distancia_euclidiana": 0.7231,
+        "tolerancia": 0.5,
+        "confianca_percentual": 27.7
       }
-    ]
+    }
+  }
+  ```
+
+##### 3. Bloqueio de Segurança por Suspeita de Ameaça (`403 Forbidden`)
+Disparado imediatamente após **5 falhas consecutivas**:
+
+```json
+{
+  "sucesso": false,
+  "bloqueado": true,
+  "tentativas_restantes": 0,
+  "bloqueado_ate": "2026-10-19T04:45:00Z",
+  "erro": {
+    "codigo": "ACCOUNT_LOCKED",
+    "mensagem": "ALERTA DE AMEAÇA: acesso bloqueado após 5 tentativas de autenticação malsucedidas. A ocorrência foi registrada e a equipe de segurança do cofre foi notificada.",
+    "detalhes": {
+      "tentativas_falhas": 5
+    }
   }
 }
 ```
@@ -239,32 +280,36 @@ Erro padrão retornado pelo Pydantic caso o campo `imagem_base64` esteja ausente
 
 ### 4.3. Cadastro de Usuário e Biometria de Referência
 
-Permite cadastrar um novo funcionário ou autoridade no sistema, vinculando seus dados funcionais ao vetor de características extraído da foto frontal de alta qualidade.
+Permite registrar um novo servidor público no sistema, vinculando seus dados funcionais, credenciais de acesso (CPF e senha) e o descritor biométrico de 128 dimensões extraído da foto facial de alta qualidade (Fases 1 a 4 do PIVC).
 
 * **Método:** `POST`
 * **Rota:** `/cadastrar`
-* **Autenticação:** Não necessária para PoC inicial (ou restrita a administradores futuramente)
+* **Autenticação:** Não necessária para PoC inicial
 
 #### Corpo da Requisição (Request Body)
 ```json
 {
   "nome": "Júlia Fernandes",
+  "cpf": "987.654.321-00",
+  "senha": "Faca@2026",
   "matricula": "R101BF1",
   "cargo_id": 2,
   "divisao_id": 1,
   "nivel_acesso": 2,
-  "imagem_base64": "/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCA..."
+  "imagem_base64": "/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP..."
 }
 ```
 
 | Campo | Tipo | Obrigatório | Descrição |
 |---|:---:|:---:|---|
 | `nome` | `string` | **Sim** | Nome completo do indivíduo (mínimo 3 caracteres). |
-| `matricula` | `string` | **Sim** | Identificador único / RA (ex: `"R101BF1"`). |
+| `cpf` | `string` | **Sim** | CPF com ou sem máscara (11 dígitos, único no sistema). |
+| `senha` | `string` | **Sim** | Senha inicial (mínimo 8 caracteres, salva com hash criptográfico). |
+| `matricula` | `string` | **Sim** | Identificador funcional / RA institucional (único). |
 | `cargo_id` | `integer` | **Sim** | ID de referência do cargo no banco de dados. |
-| `divisao_id` | `integer` | **Sim** | ID de referência da divisão governamental / departamento. |
-| `nivel_acesso`| `integer` | **Sim** | Nível hierárquico de permissão: `1`, `2` ou `3`. |
-| `imagem_base64` | `string` | **Sim** | Foto de referência nítida da face (Base64 puro). |
+| `divisao_id` | `integer` | **Sim** | ID de referência da divisão governamental. |
+| `nivel_acesso`| `integer` | **Sim** | Nível de permissão RBAC: `1` (Geral), `2` (Diretoria) ou `3` (Ministro). |
+| `imagem_base64` | `string` | **Sim** | Foto de referência nítida da face para extração do vetor 128D. |
 
 ---
 
@@ -276,6 +321,7 @@ Permite cadastrar um novo funcionário ou autoridade no sistema, vinculando seus
   "usuario": {
     "id": 2,
     "nome": "Júlia Fernandes",
+    "cpf_mascarado": "***.654.321-**",
     "matricula": "R101BF1",
     "cargo_id": 2,
     "divisao_id": 1,
@@ -286,17 +332,8 @@ Permite cadastrar um novo funcionário ou autoridade no sistema, vinculando seus
 ```
 
 #### Respostas de Erro Esperadas
-* **`400 Bad Request`:** Se a foto de cadastro não possuir exatamente 1 rosto válido (ex: `NO_FACE_DETECTED` ou `MULTIPLE_FACES_DETECTED`).
-* **`409 Conflict`:** Se a `matricula` já estiver em uso no banco de dados.
-  ```json
-  {
-    "sucesso": false,
-    "erro": {
-      "codigo": "MATRICULA_ALREADY_EXISTS",
-      "mensagem": "Já existe um usuário cadastrado com a matrícula informada."
-    }
-  }
-  ```
+* **`400 Bad Request`:** Se a foto de cadastro não possuir exatamente 1 rosto válido (`NO_FACE_DETECTED` ou `MULTIPLE_FACES_DETECTED`).
+* **`409 Conflict`:** Se o `cpf` ou a `matricula` já estiverem em uso no sistema (`CPF_ALREADY_EXISTS` ou `MATRICULA_ALREADY_EXISTS`).
 
 ---
 
@@ -437,6 +474,122 @@ Caso o endpoint venha a ser configurado para bloquear totalmente uma sub-rota (e
   }
 }
 ```
+
+---
+
+### 4.5. Rotas de Diagnóstico e Validação do PIVC (Sem Dependência de Banco)
+
+Endpoints técnicos sob a tag `Visão Computacional (PIVC)` para testes imediatos das 5 fases do Processamento Digital de Imagens via Swagger (`/docs`), sem necessidade de banco de dados populado:
+
+#### 4.5.1. Status do Motor Biométrico (`GET /biometria/status`)
+Informa a disponibilidade dos bindings C++ da biblioteca dlib / `face_recognition` e os hiperparâmetros carregados do ambiente (`FACE_RECOGNITION_TOLERANCE`, dimensões máximas, modelo HOG).
+
+```json
+{
+  "motor_disponivel": true,
+  "tolerancia": 0.5,
+  "modelo_deteccao": "hog",
+  "upsample": 1,
+  "dimensao_maxima_px": 800,
+  "dimensao_vetor": 128
+}
+```
+
+#### 4.5.2. Extração de Vetor 128D — Fases 1 a 4 (`POST /biometria/extrair-vetor`)
+Executa o pipeline de aquisição, pré-processamento, segmentação facial (HOG) e extração de características profundas (ResNet-34 do dlib), retornando o vetor numérico, a localização do rosto e a telemetria de latência por fase:
+
+* **Payload:**
+  ```json
+  {
+    "imagem_base64": "/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP...",
+    "num_jitters": 1
+  }
+  ```
+
+* **Resposta (`200 OK`):**
+  ```json
+  {
+    "sucesso": true,
+    "mensagem": "Vetor biométrico 128D extraído com sucesso.",
+    "rosto_detectado": true,
+    "quantidade_rostos": 1,
+    "localizacao_rosto": {
+      "top": 112,
+      "right": 418,
+      "bottom": 341,
+      "left": 189
+    },
+    "dimensoes_originais": { "largura": 1280, "altura": 720 },
+    "dimensoes_processadas": { "largura": 800, "altura": 450 },
+    "fator_escala": 0.625,
+    "iluminacao_normalizada": false,
+    "dimensao_vetor": 128,
+    "vetor_caracteristicas": [-0.1234, 0.0543, "... 128 floats ..."],
+    "tempos_fases_ms": {
+      "fase1_aquisicao": 4.1,
+      "fase2_preprocessamento": 2.3,
+      "fase3_segmentacao": 182.5,
+      "fase4_extracao": 61.7
+    },
+    "tempo_total_ms": 250.6
+  }
+  ```
+
+#### 4.5.3. Comparação 1:1 Direta entre Duas Imagens — Fases 1 a 5 (`POST /biometria/comparar-teste`)
+Compara duas imagens Base64 puramente em memória, retornando a Distância Euclidiana ($d = \Vert\vec{v}_1 - \vec{v}_2\Vert_2$) e se houve correspondência segundo a tolerância:
+
+* **Payload:**
+  ```json
+  {
+    "imagem_referencia_base64": "/9j/4AAQSkZJRg...",
+    "imagem_teste_base64": "/9j/4AAQSkZJRg...",
+    "tolerancia": 0.5
+  }
+  ```
+
+* **Resposta (`200 OK`):**
+  ```json
+  {
+    "sucesso": true,
+    "mensagem": "As faces pertencem à mesma pessoa (match biométrico confirmado).",
+    "resultado": {
+      "reconhecido": true,
+      "distancia_euclidiana": 0.3124,
+      "tolerancia": 0.5,
+      "confianca_percentual": 95.12
+    },
+    "localizacao_rosto_referencia": { "top": 98, "right": 390, "bottom": 320, "left": 170 },
+    "localizacao_rosto_teste": { "top": 105, "right": 402, "bottom": 331, "left": 180 },
+    "tempo_total_ms": 482.3
+  }
+  ```
+
+#### 4.5.4. Verificação Imagem × Vetor 128D (`POST /biometria/verificar-vetor`)
+Simula a verificação biométrica exata utilizada pelo cofre contra o vetor previamente salvo:
+
+* **Payload:**
+  ```json
+  {
+    "imagem_base64": "/9j/4AAQSkZJRg...",
+    "vetor_referencia": [-0.1234, 0.0543, "... 128 floats ..."],
+    "tolerancia": 0.5
+  }
+  ```
+
+* **Resposta (`200 OK`):**
+  ```json
+  {
+    "sucesso": true,
+    "mensagem": "Biometria compatível com o vetor de referência.",
+    "resultado": {
+      "reconhecido": true,
+      "distancia_euclidiana": 0.3412,
+      "tolerancia": 0.5,
+      "confianca_percentual": 93.87
+    },
+    "tempo_total_ms": 251.3
+  }
+  ```
 
 ---
 
