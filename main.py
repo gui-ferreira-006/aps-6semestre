@@ -75,12 +75,12 @@ async def ping() -> PingResponse:
     ``PingResponse``, assegurando conformidade com o contrato definido
     em API.md (Seção 4.1).
     """
-    return {
-        "status": "ok",
-        "mensagem": "Servidor F.A.C.A. operacional",
-        "versao": "1.0.0",
-        "timestamp": datetime.now(timezone.utc),
-    }
+    return PingResponse(
+        status="ok",
+        mensagem="Servidor F.A.C.A. operacional",
+        versao="1.0.0",
+        timestamp=datetime.now(timezone.utc),
+    )
 
 
 if __name__ == "__main__":
