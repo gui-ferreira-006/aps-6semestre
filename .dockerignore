@@ -1,0 +1,64 @@
+# ==============================================================================
+# .dockerignore - F.A.C.A.
+# Impede que artefatos do host sejam enviados ao daemon Docker durante o build
+# (reduz o contexto, acelera o build e evita vazamento de segredos).
+# ==============================================================================
+
+# ── Controle de versão ──
+.git/
+.gitignore
+.gitattributes
+
+# ── Ambientes virtuais locais (binários Windows incompatíveis com Linux) ──
+venv/
+.venv/
+env/
+ENV/
+
+# ── Caches / artefatos Python ──
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.egg-info/
+build/
+dist/
+
+# ── IDEs / Editores ──
+.vscode/
+.idea/
+*.swp
+
+# ── Segredos (o .env é injetado em runtime pelo Compose, nunca na imagem) ──
+.env
+.env.*
+!.env.example
+
+# ── Dados / scripts do banco (consumidos apenas pelo contêiner MySQL) ──
+database/
+mysql_data/
+db_data/
+*.sql
+*.sql.gz
+
+# ── Orquestração (desnecessária dentro da imagem) ──
+Dockerfile
+.dockerignore
+docker-compose*.yml
+compose*.yml
+
+# ── Documentação e logs ──
+docs/
+*.md
+logs/
+*.log
+
+# ── Arquivos de SO ──
+Thumbs.db
+Desktop.ini
+.DS_Store

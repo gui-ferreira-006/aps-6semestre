@@ -1,0 +1,34 @@
+# Ambientes Virtuais (Obrigatório ignorar)
+venv/
+env/
+ENV/
+.venv/
+
+# Caches do Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Configurações locais da IDE (opcional, mas recomendado ignorar caminhos absolutos)
+.vscode/*
+!.vscode/settings.json
+
+# Arquivos de sistema operacional
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Variáveis de ambiente com senhas reais (Segurança)
+.env
+.env.*
+!.env.example
+
+# Dados locais do MySQL (caso alguém troque o volume nomeado por bind mount)
+mysql_data/
+db_data/
+.docker-data/
+
+# Logs e dumps locais (scripts oficiais ficam em database/ e SÃO versionados)
+logs/
+*.log
+*.sql.bak
