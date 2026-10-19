@@ -1,0 +1,127 @@
+# ==============================================================================
+# docker-compose.yml - Orquestração F.A.C.A.
+# (Frente de Autenticação e Controle de Acesso) - APS PIVC 2026/2 (UNIP)
+# ------------------------------------------------------------------------------
+# Serviços:
+#   - db      -> MySQL 8.0 (persistência relacional + scripts de ./database)
+#   - backend -> FastAPI + OpenCV + face_recognition (dlib)
+#
+# Todas as variáveis possuem valores padrão (fallback) para que o ambiente suba
+# mesmo sem um arquivo .env. Para customizar: copie .env.example para .env.
+# ==============================================================================
+
+name: faca
+
+services:
+  # ============================================================================
+  # Banco de Dados Relacional - MySQL 8.0
+  # ============================================================================
+  db:
+    image: mysql:8.0
+    container_name: faca_mysql_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-faca_root_2026}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-faca_db}
+      MYSQL_USER: ${MYSQL_USER:-faca_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-faca_pass_2026}
+      TZ: ${TZ:-America/Sao_Paulo}
+    # Charset/collation do servidor: suporte completo a acentuação PT-BR (e emojis)
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    ports:
+      - "${DB_PORT_HOST:-3307}:3306"
+    volumes:
+      # Persistência dos dados entre reinicializações/recriações do contêiner
+      - faca_mysql_data:/var/lib/mysql
+      # Scripts .sql/.sh executados automaticamente (ordem alfabética) APENAS
+      # no primeiro boot, quando o volume faca_mysql_data ainda está vazio.
+      - ./database:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      # -h 127.0.0.1 força TCP: durante a fase de init o MySQL sobe um servidor
+      # temporário com --skip-networking. Pingar via TCP evita um falso "healthy"
+      # antes de os scripts de ./database terminarem de ser importados.
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -P 3306 -u root -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - faca_network
+
+  # ============================================================================
+  # Backend - API RESTful FastAPI + Motor Biométrico (OpenCV / face_recognition)
+  # ============================================================================
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: faca_backend:dev
+    container_name: faca_backend_api
+    restart: unless-stopped
+    # Sobrescreve o CMD do Dockerfile habilitando hot-reload em desenvolvimento
+    command: >
+      uvicorn main:app
+      --host 0.0.0.0
+      --port 8000
+      --reload
+      --reload-dir /app
+    environment:
+      # String de conexão SQLAlchemy -> hostname interno do serviço "db"
+      DATABASE_URL: mysql+pymysql://${MYSQL_USER:-faca_user}:${MYSQL_PASSWORD:-faca_pass_2026}@db:3306/${MYSQL_DATABASE:-faca_db}?charset=utf8mb4
+      DB_HOST: db
+      DB_PORT: 3306
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-faca_db}
+      MYSQL_USER: ${MYSQL_USER:-faca_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-faca_pass_2026}
+      # Parâmetros operacionais do motor biométrico / segurança
+      MAX_LOGIN_ATTEMPTS: ${MAX_LOGIN_ATTEMPTS:-3}
+      LOCKOUT_MINUTES: ${LOCKOUT_MINUTES:-15}
+      FACE_TOLERANCE: ${FACE_TOLERANCE:-0.6}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-troque-esta-chave-em-producao}
+      JWT_EXPIRATION_SECONDS: ${JWT_EXPIRATION_SECONDS:-28800}
+      # Runtime Python / contêiner
+      PYTHONUNBUFFERED: 1
+      PYTHONDONTWRITEBYTECODE: 1
+      TZ: ${TZ:-America/Sao_Paulo}
+      # Bind mounts vindos do Windows/macOS não propagam eventos inotify;
+      # o polling garante que o --reload detecte alterações no código.
+      WATCHFILES_FORCE_POLLING: "true"
+    ports:
+      - "${API_PORT:-8000}:8000"
+    volumes:
+      # Código-fonte espelhado para hot-reload do Uvicorn
+      - .:/app
+      # Volumes anônimos de proteção: mascaram artefatos do host (venv do
+      # Windows, caches) para não poluírem o ambiente Linux nem o watcher.
+      - /app/venv
+      - /app/.venv
+      - /app/__pycache__
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      # python:3.10-slim não traz curl -> usa a stdlib do próprio Python
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/ping', timeout=4).status == 200 else 1)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+    networks:
+      - faca_network
+
+# ==============================================================================
+# Redes
+# ==============================================================================
+networks:
+  faca_network:
+    name: faca_network
+    driver: bridge
+
+# ==============================================================================
+# Volumes
+# ==============================================================================
+volumes:
+  faca_mysql_data:
+    name: faca_mysql_data

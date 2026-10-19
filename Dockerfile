@@ -24,6 +24,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libx11-dev \
     libgtk-3-dev \
     pkg-config \
+    tzdata \
     && rm -rf /var/lib/apt/lists/*
 
 # Define o diretório de trabalho no contêiner
