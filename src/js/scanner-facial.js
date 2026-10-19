@@ -19,6 +19,7 @@ class FaceScanner {
     this.hudStatus = document.getElementById('hud-status-text');
     this.hudMetrics = document.getElementById('hud-metrics-text');
 
+    this.hudColor = null; // null | '#2ed573' (sucesso) | '#ff2a40' (erro/alerta)
     this.rotationAngle = 0;
     this.pulse = 0;
     this.points = [];
@@ -183,41 +184,125 @@ class FaceScanner {
     this.isCameraActive = false;
   }
 
-  // Iniciar sequência biométrica
-  startScanning(onComplete) {
-    if (this.isScanning) return;
-    this.isScanning = true;
-    this.scanProgress = 0;
+  /**
+   * Captura o quadro atual da webcam desenhando-o em um canvas oculto temporário.
+   * Retorna a string Base64 da imagem em JPEG com qualidade 0.90,
+   * pronta para ser enviada diretamente ao endpoint /autenticar do FastAPI.
+   * 
+   * @returns {string|null} String Base64 pura da imagem JPEG ou null se câmera inativa.
+   */
+  captureFrameBase64() {
+    if (!this.video || !this.isCameraActive) {
+      console.warn('FaceScanner: Câmera não está ativa para captura de frame.');
+      return null;
+    }
 
-    if (this.laserEl) this.laserEl.classList.add('scanning');
-    if (this.progressBox) this.progressBox.classList.add('active');
-    if (this.hudStatus) this.hudStatus.textContent = 'ANALISANDO BIOMETRIA...';
+    const video = this.video;
+    const width = video.videoWidth || 640;
+    const height = video.videoHeight || 480;
 
-    const duration = 2800; // 2.8 segundos de análise
-    const startTime = performance.now();
+    if (width === 0 || height === 0) {
+      console.warn('FaceScanner: Dimensões do vídeo ainda não carregadas.');
+      return null;
+    }
 
-    const scanInterval = (now) => {
-      const elapsed = now - startTime;
-      const progress = Math.min(100, Math.floor((elapsed / duration) * 100));
-      this.scanProgress = progress;
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = width;
+    tempCanvas.height = height;
 
-      if (this.progressBar) this.progressBar.style.width = `${progress}%`;
-      if (this.hudMetrics) this.hudMetrics.textContent = `BIOMETRIA ${progress}%`;
+    const tempCtx = tempCanvas.getContext('2d');
+    if (!tempCtx) return null;
 
-      if (elapsed < duration) {
-        requestAnimationFrame(scanInterval);
-      } else {
-        this.isScanning = false;
-        if (this.laserEl) this.laserEl.classList.remove('scanning');
-        if (this.hudStatus) {
-          this.hudStatus.textContent = 'ACESSO AUTORIZADO';
-          this.hudStatus.style.color = '#2ed573';
-        }
-        if (onComplete) onComplete();
+    // Desenha o frame de vídeo atual no canvas oculto
+    tempCtx.drawImage(video, 0, 0, width, height);
+
+    // Converte para Base64 JPEG com 90% de qualidade
+    return tempCanvas.toDataURL('image/jpeg', 0.90);
+  }
+
+  // -------------------------------------------------------------------------
+  // Métodos de Controle Visual do HUD e Estados de Resposta da API
+  // -------------------------------------------------------------------------
+
+  setScanningState(isScanning, label = 'ANALISANDO BIOMETRIA (PIVC)...') {
+    this.isScanning = isScanning;
+    if (isScanning) {
+      this.hudColor = '#ff2a40';
+      if (this.laserEl) this.laserEl.classList.add('scanning');
+      if (this.progressBox) this.progressBox.classList.add('active');
+      if (this.progressBar) {
+        this.progressBar.style.width = '70%';
+        this.progressBar.style.backgroundColor = '#ff2a40';
       }
-    };
+      if (this.hudStatus) {
+        this.hudStatus.textContent = label;
+        this.hudStatus.style.color = '#ff4757';
+      }
+      if (this.hudMetrics) {
+        this.hudMetrics.textContent = 'EXTRAINDO 128D...';
+        this.hudMetrics.style.color = '#ff6b81';
+      }
+    } else {
+      if (this.laserEl) this.laserEl.classList.remove('scanning');
+      if (this.progressBox) this.progressBox.classList.remove('active');
+    }
+  }
 
-    requestAnimationFrame(scanInterval);
+  setSuccessState(mensagem = 'ACESSO AUTORIZADO', metrics = 'BIOMETRIA 100%') {
+    this.isScanning = false;
+    this.hudColor = '#2ed573';
+    if (this.laserEl) this.laserEl.classList.remove('scanning');
+    if (this.progressBox) this.progressBox.classList.add('active');
+    if (this.progressBar) {
+      this.progressBar.style.width = '100%';
+      this.progressBar.style.backgroundColor = '#2ed573';
+    }
+    if (this.hudStatus) {
+      this.hudStatus.textContent = mensagem;
+      this.hudStatus.style.color = '#2ed573';
+    }
+    if (this.hudMetrics) {
+      this.hudMetrics.textContent = metrics;
+      this.hudMetrics.style.color = '#2ed573';
+    }
+  }
+
+  setErrorState(mensagem = 'ACESSO NEGADO', metrics = 'FALHA BIOMÉTRICA') {
+    this.isScanning = false;
+    this.hudColor = '#ff2a40';
+    if (this.laserEl) this.laserEl.classList.remove('scanning');
+    if (this.progressBox) this.progressBox.classList.add('active');
+    if (this.progressBar) {
+      this.progressBar.style.width = '100%';
+      this.progressBar.style.backgroundColor = '#ff2a40';
+    }
+    if (this.hudStatus) {
+      this.hudStatus.textContent = mensagem;
+      this.hudStatus.style.color = '#ff2a40';
+    }
+    if (this.hudMetrics) {
+      this.hudMetrics.textContent = metrics;
+      this.hudMetrics.style.color = '#ff2a40';
+    }
+  }
+
+  resetState() {
+    this.isScanning = false;
+    this.hudColor = null;
+    if (this.laserEl) this.laserEl.classList.remove('scanning');
+    if (this.progressBox) this.progressBox.classList.remove('active');
+    if (this.progressBar) {
+      this.progressBar.style.width = '0%';
+      this.progressBar.style.backgroundColor = '#ff2a40';
+    }
+    if (this.hudStatus) {
+      this.hudStatus.textContent = 'SISTEMA PRONTO';
+      this.hudStatus.style.color = '';
+    }
+    if (this.hudMetrics) {
+      this.hudMetrics.textContent = 'BIOMETRIA 0%';
+      this.hudMetrics.style.color = '';
+    }
   }
 
   startRendering() {
@@ -278,9 +363,14 @@ class FaceScanner {
       ctx.moveTo(p1.x, p1.y);
       ctx.lineTo(p2.x, p2.y);
 
-      if (this.isScanning) {
+      if (this.hudColor === '#2ed573') {
+        // Sucesso: verde futurista
+        ctx.strokeStyle = `rgba(46, 213, 115, ${alpha * 1.2})`;
+      } else if (this.isScanning || this.hudColor === '#ff2a40') {
+        // Escaneando ou Erro: vermelho alerta
         ctx.strokeStyle = `rgba(255, 30, 50, ${alpha * 1.3})`;
       } else {
+        // Standby holográfico padrão: azul metálico sutil
         ctx.strokeStyle = `rgba(160, 190, 220, ${alpha * 0.65})`;
       }
       ctx.stroke();
@@ -294,7 +384,11 @@ class FaceScanner {
       const pointSize = p.isPupil ? 3.5 : 2;
       ctx.arc(p.x, p.y, pointSize, 0, Math.PI * 2);
 
-      if (p.isPupil || this.isScanning) {
+      if (this.hudColor === '#2ed573') {
+        ctx.fillStyle = '#2ed573';
+        ctx.shadowBlur = 6;
+        ctx.shadowColor = '#2ed573';
+      } else if (p.isPupil || this.isScanning || this.hudColor === '#ff2a40') {
         ctx.fillStyle = '#ff2a40';
         ctx.shadowBlur = 6;
         ctx.shadowColor = '#ff2a40';
@@ -312,7 +406,7 @@ class FaceScanner {
     const eyeR = projected[32];
     if (eyeL && eyeR) {
       ctx.beginPath();
-      ctx.strokeStyle = 'rgba(255, 35, 55, 0.75)';
+      ctx.strokeStyle = this.hudColor === '#2ed573' ? 'rgba(46, 213, 115, 0.85)' : 'rgba(255, 35, 55, 0.75)';
       ctx.lineWidth = 1.2;
       ctx.setLineDash([4, 4]);
       ctx.moveTo(eyeL.x - 28, eyeL.y);
