@@ -1,0 +1,9 @@
+# Configuração do analisador estático Pyrefly (usado pelo editor).
+# Fixa o interpretador do venv local para que imports de terceiros
+# (fastapi, uvicorn, pydantic, sqlalchemy...) sejam resolvidos.
+python-interpreter-path = "venv/Scripts/python.exe"
+# Os módulos Python ficam na RAIZ. Sem isto, a existência da pasta src/
+# (frontend HTML/CSS/JS) faz o Pyrefly inferir "src" como import root e
+# acusar `Cannot find module schemas` em main.py.
+search-path = ["."]
+project-excludes = ["venv/**", ".venv/**", "**/__pycache__/**", "database/**"]
