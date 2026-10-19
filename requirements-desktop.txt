@@ -1,0 +1,13 @@
+# ==============================================================================
+# F.A.C.A. — Dependências Desktop do Host Windows
+# Terminal Biométrico Híbrido (PyWebView / Totem Nativo)
+# ==============================================================================
+# Este arquivo contém as bibliotecas necessárias APENAS no sistema hospedeiro
+# (Windows) para empacotamento da janela gráfica nativa.
+# NÃO adicionar ao Dockerfile do backend Linux.
+#
+# Instalação no venv local:
+#   venv\Scripts\pip install -r requirements-desktop.txt
+# ==============================================================================
+
+pywebview>=5.1
