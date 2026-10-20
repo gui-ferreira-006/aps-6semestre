@@ -37,11 +37,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // -------------------------------------------------------------------------
-  // 1. Máscara de CPF (Formata se forem números, ou aceita qualquer texto de teste)
+  // 1. Máscara de CPF
   // -------------------------------------------------------------------------
   cpfInput.addEventListener('input', (e) => {
     const raw = e.target.value;
-    // Se o usuário digitou apenas números, aplica máscara de CPF
     if (/^\d+$/.test(raw.replace(/[.-]/g, ''))) {
       let digits = raw.replace(/\D/g, '');
       if (digits.length > 11) digits = digits.slice(0, 11);
@@ -67,13 +66,11 @@ document.addEventListener('DOMContentLoaded', () => {
     passwordInput.type = isPwdVisible ? 'text' : 'password';
 
     if (isPwdVisible) {
-      // Ícone com corte (olho fechado)
       eyeIcon.innerHTML = `
         <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
         <line x1="1" y1="1" x2="23" y2="23"></line>
       `;
     } else {
-      // Ícone padrão (olho aberto)
       eyeIcon.innerHTML = `
         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
         <circle cx="12" cy="12" r="3" />
@@ -87,24 +84,18 @@ document.addEventListener('DOMContentLoaded', () => {
   formLogin.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    let cpfVal = cpfInput.value.trim();
-    let pwdVal = passwordInput.value.trim();
+    const cpfVal = cpfInput.value.trim();
+    const pwdVal = passwordInput.value.trim();
 
-    // Valores padrão de demonstração para agilizar testes locais
-    if (!cpfVal) {
-      cpfVal = '123.456.789-00';
-      cpfInput.value = cpfVal;
-    }
-    if (!pwdVal) {
-      pwdVal = 'Faca@2026';
-      passwordInput.value = pwdVal;
+    if (!cpfVal || !pwdVal) {
+      showFeedback(loginFeedback, 'Informe seu CPF e senha para continuar.', 'error');
+      return;
     }
 
     currentCpf = cpfVal;
     currentPassword = pwdVal;
 
-    // Feedback visual de validação
-    showFeedback(loginFeedback, 'Identificação confirmada. Carregando módulo biométrico...', 'info');
+    showFeedback(loginFeedback, 'Identificação recebida. Carregando módulo biométrico...', 'info');
 
     setTimeout(async () => {
       clearFeedback(loginFeedback);
@@ -158,12 +149,11 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // -------------------------------------------------------------------------
-  // 5. Interação de Reconhecimento Facial (Biometria Real via API)
+  // 5. Interação de Reconhecimento Facial (Biometria Real via API Python)
   // -------------------------------------------------------------------------
   btnStartScan.addEventListener('click', async () => {
     if (!scanner || scanner.isScanning) return;
 
-    // Verifica se a câmera real está ativa para permitir a extração biométrica das 5 fases
     if (!scanner.isCameraActive) {
       showFeedback(
         bioFeedback,
@@ -189,7 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // 2. Envia para o backend FastAPI (POST /autenticar)
+    // 2. Envia para o backend FastAPI Python (POST /autenticar)
     try {
       const payload = {
         cpf: currentCpf,
@@ -208,9 +198,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const dados = await resposta.json();
 
-      // 3. Processamento das Respostas Conforme o Status HTTP da API:
+      // 3. Processamento das Respostas Conforme o Status HTTP da API Python:
       if (resposta.status === 200 && dados.sucesso) {
-        // --- SUCESSO: HTTP 200 (Autenticação MFA Concluída) ---
         const biometriaInfo = dados.biometria;
         const distTxt = biometriaInfo ? biometriaInfo.distancia_euclidiana.toFixed(4) : '0.0000';
         const confTxt = biometriaInfo ? biometriaInfo.confianca_percentual.toFixed(1) : '100.0';
@@ -227,17 +216,22 @@ document.addEventListener('DOMContentLoaded', () => {
           'success'
         );
 
-        // Armazena token e dados do usuário na sessão
         sessionStorage.setItem('faca_token', dados.token);
         sessionStorage.setItem('faca_usuario', JSON.stringify(dados.usuario));
+        sessionStorage.setItem('faca_role_nivel', String(dados.usuario.nivel_acesso));
 
         setTimeout(() => {
-          btnStartScan.disabled = false;
-          btnScanLabel.textContent = 'ESCANEAR NOVAMENTE';
-        }, 3000);
+          const nivel = Number(dados.usuario.nivel_acesso) || 1;
+          if (scanner && scanner.isCameraActive) {
+            scanner.stopWebcam();
+            btnToggleCam.textContent = 'Ativar Câmera Real';
+          }
+          if (typeof window.abrirDashboardRole === 'function') {
+            window.abrirDashboardRole(nivel);
+          }
+        }, 1200);
 
       } else if (resposta.status === 400) {
-        // --- ERRO DE ENTRADA / CAPTURA: HTTP 400 (Não desconta tentativa) ---
         const codigo = dados.erro?.codigo || 'CAPTURE_ERROR';
         const mensagem = dados.erro?.mensagem || 'Falha na captura biométrica.';
 
@@ -248,7 +242,6 @@ document.addEventListener('DOMContentLoaded', () => {
         btnScanLabel.textContent = 'ESCANEAR NOVAMENTE';
 
       } else if (resposta.status === 401) {
-        // --- FALHA DE AUTENTICAÇÃO: HTTP 401 (Senha incorreta ou Rosto Divergente) ---
         const tentativasRestantes = dados.tentativas_restantes !== undefined ? dados.tentativas_restantes : '?';
         const mensagem = dados.erro?.mensagem || 'Acesso Negado.';
 
@@ -259,7 +252,6 @@ document.addEventListener('DOMContentLoaded', () => {
         btnScanLabel.textContent = 'TENTAR NOVAMENTE';
 
       } else if (resposta.status === 403) {
-        // --- BLOQUEIO DE SEGURANÇA: HTTP 403 (5 falhas consecutivas) ---
         const mensagem = dados.erro?.mensagem || 'Terminal bloqueado por suspeita de ameaça.';
 
         scanner.setErrorState('TERMINAL BLOQUEADO', 'CONTA BLOQUEADA');
@@ -269,7 +261,6 @@ document.addEventListener('DOMContentLoaded', () => {
         btnScanLabel.textContent = 'ACESSO BLOQUEADO';
 
       } else {
-        // --- OUTROS ERROS (500, 503) ---
         const mensagem = dados.erro?.mensagem || 'Erro interno no motor biométrico.';
         scanner.setErrorState('ERRO INTERNO', 'MOTOR BIOMÉTRICO');
         showFeedback(bioFeedback, `❌ ${mensagem}`, 'error');
@@ -308,7 +299,6 @@ document.addEventListener('DOMContentLoaded', () => {
     showFeedback(loginFeedback, 'Solicitação enviada ao oficial de segurança do Ministério.', 'info');
   });
 
-  // Helpers de Feedback
   function showFeedback(el, msg, type) {
     if (!el) return;
     el.textContent = msg;

@@ -47,17 +47,18 @@ Modelagem do Banco de Dados MySQL e containerização no Docker para o Backend P
 
 Prova de Conceito (PoC) da captura de vídeo no JS e envio para o Python.
 - [x] Módulo de captura de vídeo e retícula HUD em JavaScript (`src/js/scanner-facial.js`)
-- [x] Gramática fixa comentada para envio dos frames Base64 ao Backend Python (`src/js/services/servico-api.js`)
-- [ ] Envio ativo dos frames após liberação do Backend Python / MySQL
+- [x] Integração JS com a configuração Python da facial (`POST /autenticar`) tanto no Login (`src/js/principal.js`) quanto na aba **Autenticação Facial do Nível 2** (`src/js/painel-nivel3.js`)
+- [x] Gramática fixa comentada para consultas ao MySQL (`src/js/services/servico-api.js`)
+- [ ] Integração final com banco de dados MySQL em Docker
 
 ---
 
 ### Etapa 5 — Motor de Biometria
 
-![Pendente](https://img.shields.io/badge/status-pendente-lightgrey?style=flat-square)
+![Concluído](https://img.shields.io/badge/status-conclu%C3%ADdo-brightgreen?style=flat-square)
 ![OpenCV](https://img.shields.io/badge/OpenCV-5C3EE8?style=flat-square&logo=opencv&logoColor=white)
 
-Desenvolvimento do motor de biometria (Extração e comparação de faces).
+Desenvolvimento do motor de biometria (Extração e comparação de faces nas 5 fases do PIVC em `biometria.py`).
 
 ---
 
@@ -68,17 +69,29 @@ Desenvolvimento do motor de biometria (Extração e comparação de faces).
 ![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=flat-square&logo=css3&logoColor=white)
 ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat-square&logo=javascript&logoColor=black)
 
-Desenvolvimento das telas Web finais, controle de menu por níveis e preparação para compactação no Python.
+Desenvolvimento das telas Web finais para cada Role e cada aba do menu (sem dados fictícios, pré-configuradas para o MySQL), controle de menu cumulativo por níveis e empacotamento em `frontend-aps/`:
 - [x] Interface cibernética/militar de segurança (F.A.C.A) concluída (`index.html`)
-- [x] Fluxo em duas etapas: Login por CPF/Senha ➔ Reconhecimento Facial (sem acessos fictícios, aguardando SQL)
-- [x] Malha holográfica 3D e simulação de escaneamento em Canvas (`src/js/scanner-facial.js`)
-- [x] **Tela de Nível 3 — Auditoria Global e Monitoramento** (`nivel3.html`, `src/css/components/painel-nivel3.css`, `src/js/painel-nivel3.js`)
+- [x] Fluxo em duas etapas: Login por CPF/Senha ➔ Reconhecimento Facial
+- [x] Malha holográfica 3D e escaneamento em Canvas (`src/js/scanner-facial.js`)
 - [x] **Menu Lateral Cumulativo por Role/Nível** (`src/js/components/menu-niveis.js`):
-  - **Nível 3:** exibe todo o menu (Nível 1 + Nível 2 + Nível 3)
-  - **Nível 2:** exibe tudo do Nível 2 e Nível 1
-  - **Nível 1:** exibe somente a parte do menu de Nível 1
-- [x] Relatório de entrega atualizado em: [`docs/RELATORIO_FRONTEND.md`](docs/RELATORIO_FRONTEND.md)
-- [ ] Compactação do Frontend junto ao Backend Python e ativação das rotas MySQL / Docker
+  - **Role Nível 3:** exibe todo o menu (Nível 1 + Nível 2 + Nível 3)
+  - **Role Nível 2:** exibe tudo do Nível 2 e Nível 1
+  - **Role Nível 1:** exibe somente a parte do menu de Nível 1
+- [x] **Telas de Nível 1 — Relatórios (`nivel1.html`)** (pré-configuradas para receber o MySQL, sem dados):
+  - Aba `Síntese de Estatísticas` (gráficos de detecção/amostras e 4 KPIs)
+  - Aba `Panorama de Toxinas` (mapa de calor, gráficos de rosca e barras por toxina)
+  - Aba `Histórico de Alertas` (tabela de ocorrências aguardando SQL)
+  - Aba `Gerador PDF` (filtros de data/seções e folha de pré-visualização PDF)
+- [x] **Telas de Nível 2 — Cofre (`nivel2.html`)** (pré-configuradas para receber o MySQL, sem dados):
+  - Aba `Cofre Seguro (Status)` com os 2 estados: *Estado 1: Acesso Negado / Cofre Bloqueado* e *Estado 2: Cofre Desbloqueado — Status Geral e Planta Baixa*
+  - Aba `Inventário de Toxinas` (filtros, temperatura interna, quantidade e tabela aguardando SQL)
+  - Aba `Autenticação Facial` (`Sistema de Autenticação Facial — Liberação de Acesso ao Cofre`, usando a mesma configuração Python da facial no JS)
+- [x] **Telas de Nível 3 — Auditoria (`nivel3.html`)** (pré-configuradas para receber o MySQL, sem dados):
+  - Aba `Histórico de Acessos` (`Nível 3 — Auditoria Global e Monitoramento` com Sessões Ativas, Timeline, Eventos e widgets inferiores)
+  - Aba `Adicionar` (formulário de novo operador preparado para `INSERT INTO usuarios`)
+  - Aba `Desbloquear Conta` (tabela preparada para `UPDATE usuarios SET bloqueado = 0`)
+- [x] Pacote isolado do Frontend gerado em `frontend-aps/` com guia resumido de integração em [`frontend-aps/RESUMO_ATUALIZACAO.md`](frontend-aps/RESUMO_ATUALIZACAO.md) e [`docs/RELATORIO_FRONTEND.md`](docs/RELATORIO_FRONTEND.md)
+- [ ] Compactação final do Frontend junto ao container MySQL / Docker quando liberado
 
 ---
 

@@ -5,7 +5,7 @@
  */
 
 class FaceScanner {
-  constructor(canvasId, videoId) {
+  constructor(canvasId, videoId, hudIds = {}) {
     this.canvas = document.getElementById(canvasId);
     this.video = document.getElementById(videoId);
     this.ctx = this.canvas ? this.canvas.getContext('2d') : null;
@@ -13,11 +13,11 @@ class FaceScanner {
     this.stream = null;
     this.isScanning = false;
     this.scanProgress = 0;
-    this.laserEl = document.getElementById('scan-laser');
-    this.progressBar = document.getElementById('scan-progress-bar');
-    this.progressBox = document.getElementById('scan-progress-box');
-    this.hudStatus = document.getElementById('hud-status-text');
-    this.hudMetrics = document.getElementById('hud-metrics-text');
+    this.laserEl = document.getElementById(hudIds.laserId || 'scan-laser');
+    this.progressBar = document.getElementById(hudIds.progressBarId || 'scan-progress-bar');
+    this.progressBox = document.getElementById(hudIds.progressBoxId || 'scan-progress-box');
+    this.hudStatus = document.getElementById(hudIds.statusId || 'hud-status-text');
+    this.hudMetrics = document.getElementById(hudIds.metricsId || 'hud-metrics-text');
 
     this.hudColor = null; // null | '#2ed573' (sucesso) | '#ff2a40' (erro/alerta)
     this.rotationAngle = 0;
