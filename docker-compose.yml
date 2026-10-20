@@ -22,7 +22,7 @@ services:
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-faca_root_2026}
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-faca_db}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-aps_biometria}
       MYSQL_USER: ${MYSQL_USER:-faca_user}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-faca_pass_2026}
       TZ: ${TZ:-America/Sao_Paulo}
@@ -69,10 +69,10 @@ services:
       --reload-dir /app
     environment:
       # String de conexão SQLAlchemy -> hostname interno do serviço "db"
-      DATABASE_URL: mysql+pymysql://${MYSQL_USER:-faca_user}:${MYSQL_PASSWORD:-faca_pass_2026}@db:3306/${MYSQL_DATABASE:-faca_db}?charset=utf8mb4
+      DATABASE_URL: mysql+pymysql://${MYSQL_USER:-faca_user}:${MYSQL_PASSWORD:-faca_pass_2026}@db:3306/${MYSQL_DATABASE:-aps_biometria}?charset=utf8mb4
       DB_HOST: db
       DB_PORT: 3306
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-faca_db}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-aps_biometria}
       MYSQL_USER: ${MYSQL_USER:-faca_user}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-faca_pass_2026}
       # Parâmetros operacionais do motor biométrico / segurança
