@@ -1,208 +1,232 @@
 /**
  * ============================================================================
  * F.A.C.A - Frente de Autenticação e Controle de Acesso
- * SERVIÇO DE COMUNICAÇÃO FRONTEND <-> BACKEND PYTHON (MYSQL / DOCKER)
+ * Arquivo: src/js/services/servico-api.js
+ * Descrição: Camada de serviço preparada com a gramática fixa comentada para
+ *            integração com o Backend Python + Banco de Dados MySQL (Docker).
  * ============================================================================
  *
  * ATENÇÃO:
- * O banco de dados MySQL em Docker roda no Backend Python.
- * O Frontend será compactado para o ambiente Python e consumirá estas funções.
- * Nenhum acesso foi inventado: toda a gramática de requisição está pronta e
- * comentada abaixo para quando o banco e o container estiverem acessíveis.
+ * Nenhum acesso fictício está ativo. Os métodos abaixo contêm a estrutura
+ * exata (gramática fixa de fetch, headers, payloads e retorno SQL) comentada,
+ * pronta para ser descomentada assim que o container MySQL estiver rodando.
  */
 
-(function () {
+const ServicoAPI = {
   /**
    * --------------------------------------------------------------------------
-   * 1. VALIDAR CREDENCIAIS (CPF E SENHA) NO BACKEND PYTHON / MYSQL
+   * 1. AUTENTICAÇÃO POR CPF E SENHA (ETAPA 1 DO LOGIN)
    * --------------------------------------------------------------------------
+   * Quando o MySQL estiver disponível no Docker, descomente o bloco fetch
+   * abaixo para validar CPF e Senha diretamente na tabela `usuarios`.
    */
-  async function validarCredenciais(cpf, senha) {
+  async autenticarCredenciais(cpf, senha) {
     /*
-     * [DESCOMENTAR QUANDO O BACKEND PYTHON + MYSQL DOCKER ESTIVEREM CONECTADOS]
-     *
-     * const urlBase = window.FACA_CONFIG?.CONFIGURACAO_SISTEMA?.URL_BASE_API ?? '';
-     * const rota = window.FACA_CONFIG?.ROTAS_API_PYTHON?.LOGIN_CREDENCIAIS;
-     *
-     * const resposta = await fetch(`${urlBase}${rota}`, {
-     *   method: 'POST',
-     *   headers: {
-     *     'Content-Type': 'application/json',
-     *     'Accept': 'application/json'
-     *   },
-     *   body: JSON.stringify({ cpf, senha })
-     * });
-     *
-     * const dados = await resposta.json();
-     * if (!resposta.ok) {
-     *   throw new Error(dados.erro?.mensagem || 'Falha ao validar credenciais no MySQL.');
-     * }
-     * return dados;
-     */
+    // === [DESCOMENTAR QUANDO O MYSQL / DOCKER ESTIVER ATIVO] ===
+    const resposta = await fetch(`${window.CONFIGURACAO_BANCO.API_BASE_URL}${window.CONFIGURACAO_BANCO.ENDPOINTS_SQL.LOGIN_CPF_SENHA}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({
+        cpf: cpf.replace(/\D/g, ''),
+        senha: senha
+      })
+    });
+
+    const dados = await resposta.json();
+    if (!resposta.ok) {
+      throw new Error(dados.mensagem || 'Credenciais inválidas no banco MySQL.');
+    }
+
+    // Salva a role retornada pelo MySQL (1, 2 ou 3) na sessão:
+    // sessionStorage.setItem('faca_role_nivel', dados.usuario.nivel_acesso);
+    // sessionStorage.setItem('faca_usuario_id', dados.usuario.id);
+    return dados;
+    */
 
     return {
-      integrado: false,
-      mensagem: 'Aguardando integração com o Backend Python / MySQL.'
+      aguardandoSql: true,
+      mensagem: 'Aguardando integração com o container MySQL (Docker).'
     };
-  }
+  },
 
   /**
    * --------------------------------------------------------------------------
-   * 2. AUTENTICAR BIOMETRIA FACIAL E OBTER NÍVEL DE ACESSO (ROLE 1, 2 OU 3)
+   * 2. VALIDAÇÃO BIOMÉTRICA FACIAL 1:1 (ETAPA 2 DO LOGIN)
    * --------------------------------------------------------------------------
+   * Envia o frame Base64 capturado pela webcam para comparação com o vetor
+   * facial armazenado no MySQL e redireciona conforme a Role (Nível 1, 2 ou 3).
    */
-  async function autenticarBiometria(imagemBase64Puro) {
+  async validarBiometriaFacial(cpf, senha, frameBase64) {
     /*
-     * [DESCOMENTAR QUANDO O BACKEND PYTHON + MYSQL DOCKER ESTIVEREM CONECTADOS]
-     *
-     * const urlBase = window.FACA_CONFIG?.CONFIGURACAO_SISTEMA?.URL_BASE_API ?? '';
-     * const rota = window.FACA_CONFIG?.ROTAS_API_PYTHON?.AUTENTICAR_BIOMETRIA;
-     *
-     * const resposta = await fetch(`${urlBase}${rota}`, {
-     *   method: 'POST',
-     *   headers: {
-     *     'Content-Type': 'application/json',
-     *     'Accept': 'application/json'
-     *   },
-     *   body: JSON.stringify({ imagem_base64: imagemBase64Puro })
-     * });
-     *
-     * const dados = await resposta.json();
-     * if (!resposta.ok) {
-     *   throw {
-     *     status: resposta.status,
-     *     codigo: dados.erro?.codigo || 'FACE_NOT_RECOGNIZED',
-     *     mensagem: dados.erro?.mensagem || 'Rosto não reconhecido na base MySQL.'
-     *   };
-     * }
-     *
-     * // Armazena token e usuário retornados pelo Python/MySQL
-     * sessionStorage.setItem('faca_token', dados.token);
-     * sessionStorage.setItem('faca_usuario', JSON.stringify(dados.usuario));
-     * sessionStorage.setItem('faca_nivel_acesso', String(dados.usuario.nivel_acesso));
-     *
-     * return dados;
-     */
+    // === [DESCOMENTAR QUANDO O MYSQL / DOCKER ESTIVER ATIVO] ===
+    const base64Puro = frameBase64.replace(/^data:image\/[a-z]+;base64,/, '');
+
+    const resposta = await fetch(`${window.CONFIGURACAO_BANCO.API_BASE_URL}/autenticar`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({
+        cpf: cpf.replace(/\D/g, ''),
+        senha: senha,
+        imagem_base64: base64Puro
+      })
+    });
+
+    const dados = await resposta.json();
+    if (!resposta.ok) {
+      throw dados;
+    }
+
+    // Armazena Token JWT e Role vindos do banco MySQL
+    sessionStorage.setItem('faca_token', dados.token);
+    sessionStorage.setItem('faca_role_nivel', String(dados.usuario.nivel_acesso));
+    sessionStorage.setItem('faca_usuario', JSON.stringify(dados.usuario));
+
+    // Redirecionamento automático baseado na Role do usuário no MySQL:
+    // Role 1 -> nivel1.html | Role 2 -> nivel2.html | Role 3 -> nivel3.html
+    const destino = window.CONFIGURACAO_BANCO.ROLES_PERMISSOES[dados.usuario.nivel_acesso]?.paginaInicial || 'nivel1.html';
+    window.location.href = destino;
+    return dados;
+    */
 
     return {
-      integrado: false,
-      mensagem: 'Aguardando conexão com o Backend Python / MySQL para validar biometria.'
+      aguardandoSql: true,
+      mensagem: 'Módulo de validação biométrica aguardando conexão com banco MySQL.'
     };
-  }
+  },
 
   /**
    * --------------------------------------------------------------------------
-   * 3. BUSCAR DADOS DE AUDITORIA DA TELA DE NÍVEL 3
+   * 3. CONSULTAS DO NÍVEL 3 — AUDITORIA GLOBAL E MONITORAMENTO
    * --------------------------------------------------------------------------
    */
-  async function obterDadosAuditoriaNivel3() {
+  async carregarDadosNivel3() {
     /*
-     * [DESCOMENTAR QUANDO O BACKEND PYTHON + MYSQL DOCKER ESTIVEREM CONECTADOS]
-     *
-     * const urlBase = window.FACA_CONFIG?.CONFIGURACAO_SISTEMA?.URL_BASE_API ?? '';
-     * const token = sessionStorage.getItem('faca_token');
-     *
-     * const cabecalhos = {
-     *   'Authorization': `Bearer ${token}`,
-     *   'Accept': 'application/json'
-     * };
-     *
-     * const [resSessoes, resHistorico, resToxinas, resCofre] = await Promise.all([
-     *   fetch(`${urlBase}/auditoria/sessoes-ativas`, { headers: cabecalhos }),
-     *   fetch(`${urlBase}/auditoria/historico-acessos`, { headers: cabecalhos }),
-     *   fetch(`${urlBase}/relatorios/panorama-toxinas`, { headers: cabecalhos }),
-     *   fetch(`${urlBase}/cofre/status`, { headers: cabecalhos })
-     * ]);
-     *
-     * return {
-     *   sessoesAtivas: await resSessoes.json(),
-     *   historicoAcessos: await resHistorico.json(),
-     *   panoramaToxinas: await resToxinas.json(),
-     *   statusCofre: await resCofre.json()
-     * };
-     */
+    // === [DESCOMENTAR QUANDO O MYSQL / DOCKER ESTIVER ATIVO] ===
+    const token = sessionStorage.getItem('faca_token');
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    };
 
+    const [resSessoes, resHistorico] = await Promise.all([
+      fetch(`${window.CONFIGURACAO_BANCO.API_BASE_URL}${window.CONFIGURACAO_BANCO.ENDPOINTS_SQL.NIVEL_3.SESSOES_ATIVAS}`, { headers }),
+      fetch(`${window.CONFIGURACAO_BANCO.API_BASE_URL}${window.CONFIGURACAO_BANCO.ENDPOINTS_SQL.NIVEL_3.HISTORICO_ACESSOS}`, { headers })
+    ]);
+
+    return {
+      sessoesAtivas: await resSessoes.json(),     // Popula #tabela-sessoes-ativas
+      historicoAcessos: await resHistorico.json() // Popula #lista-timeline e #lista-eventos
+    };
+    */
+    return null;
+  },
+
+  /**
+   * --------------------------------------------------------------------------
+   * 4. AÇÃO NÍVEL 3: ADICIONAR NOVO USUÁRIO (+ NOVO USUÁRIO / ADICIONAR)
+   * --------------------------------------------------------------------------
+   */
+  async adicionarUsuarioMySQL(dadosNovoUsuario) {
+    /*
+    // === [DESCOMENTAR QUANDO O MYSQL / DOCKER ESTIVER ATIVO] ===
+    // Query esperada no Backend:
+    // INSERT INTO usuarios (nome, cpf, senha_hash, matricula, nivel_acesso, vetor_facial) VALUES (...)
+    const token = sessionStorage.getItem('faca_token');
+    const resposta = await fetch(`${window.CONFIGURACAO_BANCO.API_BASE_URL}${window.CONFIGURACAO_BANCO.ENDPOINTS_SQL.NIVEL_3.ADICIONAR_USUARIO}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        nome: dadosNovoUsuario.nome,
+        cpf: dadosNovoUsuario.cpf,
+        senha: dadosNovoUsuario.senha,
+        matricula: dadosNovoUsuario.matricula,
+        nivel_acesso: Number(dadosNovoUsuario.nivel_acesso),
+        imagem_base64: dadosNovoUsuario.imagem_base64
+      })
+    });
+    return await resposta.json();
+    */
+    return { aguardandoSql: true };
+  },
+
+  /**
+   * --------------------------------------------------------------------------
+   * 5. AÇÃO NÍVEL 3: DESBLOQUEAR CONTA (BOTÃO UNBLOCK)
+   * --------------------------------------------------------------------------
+   */
+  async desbloquearContaMySQL(usuarioId) {
+    /*
+    // === [DESCOMENTAR QUANDO O MYSQL / DOCKER ESTIVER ATIVO] ===
+    // Query esperada no Backend:
+    // UPDATE usuarios SET bloqueado = 0, tentativas_falhas = 0 WHERE id = :usuarioId;
+    const token = sessionStorage.getItem('faca_token');
+    const resposta = await fetch(`${window.CONFIGURACAO_BANCO.API_BASE_URL}${window.CONFIGURACAO_BANCO.ENDPOINTS_SQL.NIVEL_3.DESBLOQUEAR_CONTA}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ usuario_id: usuarioId })
+    });
+    return await resposta.json();
+    */
+    return { aguardandoSql: true };
+  },
+
+  /**
+   * --------------------------------------------------------------------------
+   * 6. CONSULTAS DO NÍVEL 2 — COFRE E INVENTÁRIO DE TOXINAS
+   * --------------------------------------------------------------------------
+   */
+  async carregarDadosNivel2() {
+    /*
+    // === [DESCOMENTAR QUANDO O MYSQL / DOCKER ESTIVER ATIVO] ===
+    // Query esperada no Backend:
+    // SELECT * FROM toxinas WHERE nivel_requerido <= 2;
+    const token = sessionStorage.getItem('faca_token');
+    const resposta = await fetch(`${window.CONFIGURACAO_BANCO.API_BASE_URL}${window.CONFIGURACAO_BANCO.ENDPOINTS_SQL.NIVEL_2.INVentario_TOXINAS}`, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    return await resposta.json();
+    */
+    return null;
+  },
+
+  /**
+   * --------------------------------------------------------------------------
+   * 7. CONSULTAS DO NÍVEL 1 — RELATÓRIOS E ESTATÍSTICAS
+   * --------------------------------------------------------------------------
+   */
+  async carregarDadosNivel1() {
+    /*
+    // === [DESCOMENTAR QUANDO O MYSQL / DOCKER ESTIVER ATIVO] ===
+    // Query esperada no Backend:
+    // SELECT * FROM toxinas WHERE nivel_requerido = 1;
+    const token = sessionStorage.getItem('faca_token');
+    const resposta = await fetch(`${window.CONFIGURACAO_BANCO.API_BASE_URL}${window.CONFIGURACAO_BANCO.ENDPOINTS_SQL.NIVEL_1.ESTATISTICAS}`, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    return await resposta.json();
+    */
     return null;
   }
+};
 
-  /**
-   * --------------------------------------------------------------------------
-   * 4. CADASTRAR NOVO USUÁRIO (+ NOVO USUÁRIO / + ADICIONAR NO NÍVEL 3)
-   * --------------------------------------------------------------------------
-   */
-  async function cadastrarNovoUsuario(dadosFormulario, imagemBase64Puro) {
-    /*
-     * [DESCOMENTAR QUANDO O BACKEND PYTHON + MYSQL DOCKER ESTIVEREM CONECTADOS]
-     *
-     * const urlBase = window.FACA_CONFIG?.CONFIGURACAO_SISTEMA?.URL_BASE_API ?? '';
-     * const rota = window.FACA_CONFIG?.ROTAS_API_PYTHON?.CADASTRAR_USUARIO;
-     * const token = sessionStorage.getItem('faca_token');
-     *
-     * const payload = {
-     *   nome: dadosFormulario.nome,
-     *   matricula: dadosFormulario.matricula,
-     *   cargo_id: Number(dadosFormulario.cargo_id),
-     *   divisao_id: Number(dadosFormulario.divisao_id),
-     *   nivel_acesso: Number(dadosFormulario.nivel_acesso), // 1, 2 ou 3
-     *   imagem_base64: imagemBase64Puro
-     * };
-     *
-     * const resposta = await fetch(`${urlBase}${rota}`, {
-     *   method: 'POST',
-     *   headers: {
-     *     'Content-Type': 'application/json',
-     *     'Authorization': `Bearer ${token}`,
-     *     'Accept': 'application/json'
-     *   },
-     *   body: JSON.stringify(payload)
-     * });
-     *
-     * return await resposta.json();
-     */
-
-    return {
-      integrado: false,
-      mensagem: 'Cadastro preparado para envio ao Backend Python / MySQL.'
-    };
-  }
-
-  /**
-   * --------------------------------------------------------------------------
-   * 5. DESBLOQUEAR CONTA DE USUÁRIO (BOTÃO DESBLOQUEAR NO NÍVEL 3)
-   * --------------------------------------------------------------------------
-   */
-  async function desbloquearContaUsuario(usuarioOuEventoId) {
-    /*
-     * [DESCOMENTAR QUANDO O BACKEND PYTHON + MYSQL DOCKER ESTIVEREM CONECTADOS]
-     *
-     * const urlBase = window.FACA_CONFIG?.CONFIGURACAO_SISTEMA?.URL_BASE_API ?? '';
-     * const rota = window.FACA_CONFIG?.ROTAS_API_PYTHON?.DESBLOQUEAR_CONTA;
-     * const token = sessionStorage.getItem('faca_token');
-     *
-     * const resposta = await fetch(`${urlBase}${rota}`, {
-     *   method: 'PUT',
-     *   headers: {
-     *     'Content-Type': 'application/json',
-     *     'Authorization': `Bearer ${token}`,
-     *     'Accept': 'application/json'
-     *   },
-     *   body: JSON.stringify({ alvo_id: usuarioOuEventoId })
-     * });
-     *
-     * return await resposta.json();
-     */
-
-    return {
-      integrado: false,
-      mensagem: 'Desbloqueio preparado para envio ao Backend Python / MySQL.'
-    };
-  }
-
-  window.ServicoApiFaca = {
-    validarCredenciais,
-    autenticarBiometria,
-    obterDadosAuditoriaNivel3,
-    cadastrarNovoUsuario,
-    desbloquearContaUsuario
-  };
-})();
+window.ServicoAPI = ServicoAPI;

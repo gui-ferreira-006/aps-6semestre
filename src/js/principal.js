@@ -2,8 +2,9 @@
  * F.A.C.A - Frente de Autenticação e Controle de Acesso
  * Lógica Principal da Interface:
  * 1. Etapa de Login (CPF e Senha)
- * 2. Transição para Reconhecimento Facial (Biometria)
- * 3. Validações e Interatividade
+ * 2. Transição para Reconhecimento Facial (Biometria Real com PIVC)
+ * 3. Integração com API RESTful FastAPI (/autenticar)
+ * 4. Validações, Feedback Contextual e Controle de Tentativas/Bloqueio
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -25,18 +26,21 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnToggleCam = document.getElementById('btn-toggle-cam');
   const bioFeedback = document.getElementById('bio-feedback');
 
-  // Inicializa o Scanner Facial
+  // Estado da Autenticação em Memória do Cliente
+  let currentCpf = '';
+  let currentPassword = '';
+
+  // Inicializa o Scanner Facial Holográfico / Câmera Real
   let scanner = null;
   if (window.FaceScanner) {
     scanner = new window.FaceScanner('face-mesh-canvas', 'webcam-video');
   }
 
   // -------------------------------------------------------------------------
-  // 1. Máscara de CPF (Formata se forem números, ou aceita qualquer texto de teste)
+  // 1. Máscara de CPF
   // -------------------------------------------------------------------------
   cpfInput.addEventListener('input', (e) => {
     const raw = e.target.value;
-    // Se o usuário digitou apenas números, aplica máscara de CPF
     if (/^\d+$/.test(raw.replace(/[.-]/g, ''))) {
       let digits = raw.replace(/\D/g, '');
       if (digits.length > 11) digits = digits.slice(0, 11);
@@ -62,13 +66,11 @@ document.addEventListener('DOMContentLoaded', () => {
     passwordInput.type = isPwdVisible ? 'text' : 'password';
 
     if (isPwdVisible) {
-      // Ícone com corte (olho fechado)
       eyeIcon.innerHTML = `
         <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
         <line x1="1" y1="1" x2="23" y2="23"></line>
       `;
     } else {
-      // Ícone padrão (olho aberto)
       eyeIcon.innerHTML = `
         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
         <circle cx="12" cy="12" r="3" />
@@ -85,38 +87,32 @@ document.addEventListener('DOMContentLoaded', () => {
     const cpfVal = cpfInput.value.trim();
     const pwdVal = passwordInput.value.trim();
 
-    /*
-     * ========================================================================
-     * [INTEGRAÇÃO BACKEND PYTHON (MYSQL / DOCKER) - ETAPA 1: CPF E SENHA]
-     * O Docker e o MySQL ficam no Backend em Python, e este Frontend será
-     * compactado para rodar integrado ao Python.
-     * Quando o banco estiver ativo, descomente a gramática abaixo:
-     *
-     * try {
-     *   await window.ServicoApiFaca.validarCredenciais(cpfVal, pwdVal);
-     *   showFeedback(loginFeedback, 'Credenciais validadas. Iniciando biometria...', 'info');
-     *   setTimeout(() => {
-     *     clearFeedback(loginFeedback);
-     *     transitionToStep('biometrics');
-     *   }, 450);
-     * } catch (erro) {
-     *   showFeedback(loginFeedback, erro.message, 'error');
-     * }
-     * return;
-     * ========================================================================
-     */
+    if (!cpfVal || !pwdVal) {
+      showFeedback(loginFeedback, 'Informe seu CPF e senha para continuar.', 'error');
+      return;
+    }
 
-    // Transição estrutural de interface (aguardando integração SQL no Backend Python)
-    showFeedback(
-      loginFeedback,
-      'Aguardando integração SQL. Avançando para etapa biométrica...',
-      'info'
-    );
+    currentCpf = cpfVal;
+    currentPassword = pwdVal;
 
-    setTimeout(() => {
+    showFeedback(loginFeedback, 'Identificação recebida. Carregando módulo biométrico...', 'info');
+
+    setTimeout(async () => {
       clearFeedback(loginFeedback);
       transitionToStep('biometrics');
-    }, 450);
+
+      // Tenta iniciar a webcam real automaticamente na transição
+      if (scanner && !scanner.isCameraActive) {
+        const camAtiva = await scanner.startWebcam();
+        if (camAtiva) {
+          btnToggleCam.textContent = 'Usar Malha Holográfica';
+          showFeedback(bioFeedback, 'Câmera operacional. Enquadre seu rosto e clique em Iniciar Reconhecimento.', 'info');
+        } else {
+          btnToggleCam.textContent = 'Ativar Câmera Real';
+          showFeedback(bioFeedback, 'Câmera real desativada. Para validação biométrica real, clique em "Ativar Câmera Real" abaixo.', 'info');
+        }
+      }
+    }, 350);
   });
 
   // -------------------------------------------------------------------------
@@ -142,86 +138,175 @@ document.addEventListener('DOMContentLoaded', () => {
   // Voltar para a Etapa 1
   btnBackLogin.addEventListener('click', () => {
     clearFeedback(bioFeedback);
-    if (scanner && scanner.isCameraActive) {
-      scanner.stopWebcam();
-      btnToggleCam.textContent = 'Ativar Câmera Real';
+    if (scanner) {
+      scanner.resetState();
+      if (scanner.isCameraActive) {
+        scanner.stopWebcam();
+        btnToggleCam.textContent = 'Ativar Câmera Real';
+      }
     }
     transitionToStep('login');
   });
 
   // -------------------------------------------------------------------------
-  // 5. Interação de Reconhecimento Facial (Biometria) -> Nível de Acesso SQL
+  // 5. Interação de Reconhecimento Facial (Biometria Real via API Python)
   // -------------------------------------------------------------------------
-  btnStartScan.addEventListener('click', () => {
+  btnStartScan.addEventListener('click', async () => {
     if (!scanner || scanner.isScanning) return;
 
-    btnStartScan.disabled = true;
-    btnScanLabel.textContent = 'ESCANEANDO...';
-    clearFeedback(bioFeedback);
-
-    scanner.startScanning(async () => {
-      btnScanLabel.textContent = 'LEITURA CONCLUÍDA';
-
-      /*
-       * ======================================================================
-       * [INTEGRAÇÃO BACKEND PYTHON (MYSQL / DOCKER) - ETAPA 2: BIOMETRIA]
-       * Quando o Backend Python + MySQL estiverem ativos, descomente a
-       * gramática fixa abaixo para autenticar a face e redirecionar por nível:
-       *
-       * try {
-       *   const base64Puro = capturarBase64Puro(scanner.canvas);
-       *   const dadosAuth = await window.ServicoApiFaca.autenticarBiometria(base64Puro);
-       *
-       *   // Redirecionamento baseado em `nivel_acesso` (1, 2 ou 3) vindo do MySQL:
-       *   // - Nível 3: Menu Completo (Níveis 1, 2 e 3) -> nivel3.html
-       *   // - Nível 2: Menu Níveis 1 e 2 -> nivel3.html
-       *   // - Nível 1: Somente Menu Nível 1 -> nivel3.html
-       *   if (dadosAuth.usuario.nivel_acesso === 3) {
-       *     window.location.href = 'nivel3.html';
-       *   } else if (dadosAuth.usuario.nivel_acesso === 2) {
-       *     window.location.href = 'nivel3.html';
-       *   } else {
-       *     window.location.href = 'nivel3.html';
-       *   }
-       * } catch (erro) {
-       *   showFeedback(bioFeedback, erro.mensagem || 'Acesso negado pelo banco.', 'error');
-       * }
-       * ======================================================================
-       */
-
+    if (!scanner.isCameraActive) {
       showFeedback(
         bioFeedback,
-        'Captura concluída. Aguardando Backend Python / MySQL para validar acesso.',
+        '⚠️ A câmera real não está ativa! Clique em "Ativar Câmera Real" abaixo para permitir a captura facial.',
         'info'
       );
+      return;
+    }
 
-      setTimeout(() => {
+    btnStartScan.disabled = true;
+    btnScanLabel.textContent = 'ENVIANDO AO MOTOR PIVC...';
+    clearFeedback(bioFeedback);
+    scanner.setScanningState(true, 'ANALISANDO BIOMETRIA (PIVC)...');
+
+    // 1. Captura o quadro real da webcam em Base64
+    const frameBase64 = scanner.captureFrameBase64();
+
+    if (!frameBase64) {
+      scanner.setErrorState('ERRO DE CAPTURA', 'FRAME NULO');
+      showFeedback(bioFeedback, 'Não foi possível capturar o quadro do vídeo. Verifique se a câmera está conectada.', 'error');
+      btnStartScan.disabled = false;
+      btnScanLabel.textContent = 'TENTAR NOVAMENTE';
+      return;
+    }
+
+    // 2. Envia para o backend FastAPI Python (POST /autenticar)
+    try {
+      const payload = {
+        cpf: currentCpf,
+        senha: currentPassword,
+        imagem_base64: frameBase64
+      };
+
+      const resposta = await fetch('/autenticar', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const dados = await resposta.json();
+
+      // 3. Processamento das Respostas Conforme o Status HTTP da API Python:
+      if (resposta.status === 200 && dados.sucesso) {
+        const biometriaInfo = dados.biometria;
+        const distTxt = biometriaInfo ? biometriaInfo.distancia_euclidiana.toFixed(4) : '0.0000';
+        const confTxt = biometriaInfo ? biometriaInfo.confianca_percentual.toFixed(1) : '100.0';
+
+        scanner.setSuccessState(
+          'ACESSO AUTORIZADO',
+          `DIST: ${distTxt} | CONF: ${confTxt}%`
+        );
+
+        btnScanLabel.textContent = 'ACESSO CONCEDIDO';
+        showFeedback(
+          bioFeedback,
+          `ACESSO LIBERADO: Nível ${dados.usuario.nivel_acesso} — ${dados.usuario.nome} (${dados.usuario.cargo}). Distância Euclidiana: ${distTxt} (Confiança: ${confTxt}%)`,
+          'success'
+        );
+
+        sessionStorage.setItem('faca_token', dados.token);
+        sessionStorage.setItem('faca_usuario', JSON.stringify(dados.usuario));
+        sessionStorage.setItem('faca_role_nivel', String(dados.usuario.nivel_acesso));
+
+        setTimeout(() => {
+          const nivel = Number(dados.usuario.nivel_acesso) || 1;
+          if (scanner && scanner.isCameraActive) {
+            scanner.stopWebcam();
+            btnToggleCam.textContent = 'Ativar Câmera Real';
+          }
+          if (typeof window.abrirDashboardRole === 'function') {
+            window.abrirDashboardRole(nivel);
+          }
+        }, 1200);
+
+      } else if (resposta.status === 400) {
+        const codigo = dados.erro?.codigo || 'CAPTURE_ERROR';
+        const mensagem = dados.erro?.mensagem || 'Falha na captura biométrica.';
+
+        scanner.setErrorState(codigo, 'REPOSICIONE O ROSTO');
+        showFeedback(bioFeedback, `⚠️ ${mensagem}`, 'info');
+
         btnStartScan.disabled = false;
         btnScanLabel.textContent = 'ESCANEAR NOVAMENTE';
-      }, 2500);
-    });
+
+      } else if (resposta.status === 401) {
+        const tentativasRestantes = dados.tentativas_restantes !== undefined ? dados.tentativas_restantes : '?';
+        const mensagem = dados.erro?.mensagem || 'Acesso Negado.';
+
+        scanner.setErrorState('ACESSO NEGADO', `TENTATIVAS: ${tentativasRestantes}`);
+        showFeedback(bioFeedback, `❌ ${mensagem} [Tentativas restantes: ${tentativasRestantes}]`, 'error');
+
+        btnStartScan.disabled = false;
+        btnScanLabel.textContent = 'TENTAR NOVAMENTE';
+
+      } else if (resposta.status === 403) {
+        const mensagem = dados.erro?.mensagem || 'Terminal bloqueado por suspeita de ameaça.';
+
+        scanner.setErrorState('TERMINAL BLOQUEADO', 'CONTA BLOQUEADA');
+        showFeedback(bioFeedback, `🚨 ${mensagem}`, 'error');
+
+        btnStartScan.disabled = true;
+        btnScanLabel.textContent = 'ACESSO BLOQUEADO';
+
+      } else {
+        const mensagem = dados.erro?.mensagem || 'Erro interno no motor biométrico.';
+        scanner.setErrorState('ERRO INTERNO', 'MOTOR BIOMÉTRICO');
+        showFeedback(bioFeedback, `❌ ${mensagem}`, 'error');
+
+        btnStartScan.disabled = false;
+        btnScanLabel.textContent = 'TENTAR NOVAMENTE';
+      }
+
+    } catch (erro) {
+      console.error('Falha na comunicação com o backend:', erro);
+      scanner.setErrorState('ERRO DE REDE', 'OFFLINE');
+      showFeedback(bioFeedback, '❌ Falha de comunicação com o servidor F.A.C.A. Verifique se o backend está online.', 'error');
+      btnStartScan.disabled = false;
+      btnScanLabel.textContent = 'TENTAR NOVAMENTE';
+    }
   });
 
   // Alternar Câmera Real
   btnToggleCam.addEventListener('click', async () => {
     if (!scanner) return;
+    clearFeedback(bioFeedback);
     const active = await scanner.toggleWebcam();
     btnToggleCam.textContent = active ? 'Usar Malha Holográfica' : 'Ativar Câmera Real';
+
+    if (active) {
+      showFeedback(bioFeedback, 'Câmera ativada. Posicione seu rosto no centro do enquadramento.', 'info');
+    } else {
+      scanner.resetState();
+      showFeedback(bioFeedback, 'Modo holográfico ativo. Ative a câmera real para validação das 5 fases.', 'info');
+    }
   });
 
   // Link Esqueceu sua senha
   forgotPwdLink.addEventListener('click', (e) => {
     e.preventDefault();
-    showFeedback(loginFeedback, 'Solicitação enviada ao oficial de segurança.', 'info');
+    showFeedback(loginFeedback, 'Solicitação enviada ao oficial de segurança do Ministério.', 'info');
   });
 
-  // Helpers de Feedback
   function showFeedback(el, msg, type) {
+    if (!el) return;
     el.textContent = msg;
     el.className = `feedback-msg show ${type}`;
   }
 
   function clearFeedback(el) {
+    if (!el) return;
     el.textContent = '';
     el.className = 'feedback-msg';
   }

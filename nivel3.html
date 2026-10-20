@@ -14,26 +14,29 @@
   <link rel="stylesheet" href="src/css/estilo.css">
   <link rel="stylesheet" href="src/css/components/painel-nivel3.css">
 </head>
-<body class="nivel3-body">
-  <!-- Canvas de Fundo Interativo (Rede Neural / Constelações Cibernéticas) -->
+<body class="dashboard-body" data-role-nivel="3">
+  <!-- Canvas de Fundo Interativo -->
   <canvas id="bg-canvas"></canvas>
 
   <!-- Ambient Glow Vignette -->
   <div class="ambient-glow"></div>
 
-  <!-- Marca d'água de código binário ao fundo (idêntico à imagem de referência) -->
-  <div class="binary-watermark top-binary" aria-hidden="true">000001001 001010001 0001001001
-000100010 0100001001 010000001
-000001010 010001001 0010001001
-000001010 000001010 0100001001
-001001000 001000001 0010001001
-001010101 001001010 0001000010</div>
+  <!-- Matriz Numérica Decorativa de Fundo -->
+  <div class="cyber-matrix-watermark top-matrix" aria-hidden="true">008005200: 00405300: 00650250:
+000400050: 005000200: 02000000:
+000002050: 01000130: 00300550:
+000003805: 08000503: 02000800:
+003005000: 00300805: 00300030:
+005038380: 00560203: 02000070:
+005300052: 00350301: 00610200:</div>
 
-  <div class="binary-watermark bottom-binary" aria-hidden="true">10010101010011
-10000010101001
-10000101010010
-10000010100101
-10100101010101</div>
+  <div class="cyber-matrix-watermark bottom-matrix" aria-hidden="true">1001023018091
+1002008010301
+1080006830201
+1000008012903
+1080020310102
+1
+1102010500301</div>
 
   <!-- HUD Corner Details -->
   <div class="hud-corner top-left">
@@ -68,616 +71,357 @@
     </div>
   </div>
 
-  <!-- Workspace Principal: Sidebar RBAC + Painel Nível 3 -->
-  <div class="nivel3-workspace">
+  <!-- Barra de Pré-visualização Rápida das 3 Roles -->
+  <div id="role-preview-switcher"></div>
 
-    <!-- ======================================================================
-         MENU LATERAL CUMULATIVO POR ROLE (RBAC):
-         - Role Nível 1 -> Exibe somente [data-menu-nivel="1"]
-         - Role Nível 2 -> Exibe [data-menu-nivel="1"] e [data-menu-nivel="2"]
-         - Role Nível 3 -> Exibe tudo: [data-menu-nivel="1"], "2" e "3"
-         ====================================================================== -->
-    <aside class="sidebar-faca" aria-label="Menu de Navegação por Níveis de Segurança">
-      <div>
-        <!-- Identidade do Menu (Logo Exclusiva + Botão de Esconder/Mostrar Menu) -->
-        <div class="sidebar-brand">
-          <div class="sidebar-brand-identity" id="logo-trigger-expand" title="F.A.C.A - Ministério do Meio Ambiente">
-            <svg viewBox="0 0 160 160" class="sidebar-mini-shield">
-              <defs>
-                <radialGradient id="redGlowMenu" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stop-color="#ff1a35" stop-opacity="0.9" />
-                  <stop offset="50%" stop-color="#ab091b" stop-opacity="0.5" />
-                  <stop offset="100%" stop-color="#ff0022" stop-opacity="0" />
-                </radialGradient>
-              </defs>
-              <path d="M22 68 L36 68 L48 80 L48 102" fill="none" stroke="#cfd6e0" stroke-width="2.5" stroke-linecap="round"/>
-              <circle cx="22" cy="68" r="3" fill="#cfd6e0" />
-              <path d="M138 68 L124 68 L112 80 L112 102" fill="none" stroke="#cfd6e0" stroke-width="2.5" stroke-linecap="round"/>
-              <circle cx="138" cy="68" r="3" fill="#cfd6e0" />
-              <path d="M80 18 L118 42 L118 102 L98 126 L62 126 L42 102 L42 42 Z" fill="none" stroke="#dfe4ec" stroke-width="5" stroke-linejoin="round" />
-              <path d="M80 38 L100 52 L100 92 L88 106 L72 106 L60 92 L60 52 Z" fill="none" stroke="#ff223e" stroke-width="3.5" />
-              <circle cx="80" cy="74" r="28" fill="url(#redGlowMenu)" opacity="0.75" />
-              <g transform="translate(68, 62)">
-                <rect x="3" y="10" width="18" height="14" rx="2.5" fill="#e6142c" stroke="#ff475b" stroke-width="1.5" />
-                <path d="M6 10 V6 A6 6 0 0 1 18 6 V10" fill="none" stroke="#ff6b7b" stroke-width="2.5" stroke-linecap="round" />
-                <circle cx="12" cy="16" r="2" fill="#ffffff" />
-                <path d="M12 18 V21" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round"/>
-              </g>
-            </svg>
-            <div class="sidebar-brand-text">
-              <span class="sidebar-brand-title">F.A.C.A</span>
-              <span class="sidebar-brand-sub">MINISTÉRIO DO MEIO AMBIENTE</span>
+  <!-- Cabeçalho Central F.A.C.A -->
+  <header class="dashboard-top-header">
+    <div class="logo-wrapper">
+      <div class="logo-shield">
+        <svg viewBox="0 0 160 160" class="shield-svg">
+          <defs>
+            <radialGradient id="redGlowN3" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#ff1a35" stop-opacity="0.9" />
+              <stop offset="50%" stop-color="#ab091b" stop-opacity="0.5" />
+              <stop offset="100%" stop-color="#ff0022" stop-opacity="0" />
+            </radialGradient>
+            <filter id="glowEffectN3" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="3" result="blur" />
+              <feComposite in="SourceGraphic" in2="blur" operator="over" />
+            </filter>
+          </defs>
+          <path d="M22 68 L36 68 L48 80 L48 102" fill="none" stroke="#cfd6e0" stroke-width="2.5" stroke-linecap="round"/>
+          <circle cx="22" cy="68" r="3" fill="#cfd6e0" />
+          <path d="M138 68 L124 68 L112 80 L112 102" fill="none" stroke="#cfd6e0" stroke-width="2.5" stroke-linecap="round"/>
+          <circle cx="138" cy="68" r="3" fill="#cfd6e0" />
+          <path d="M80 18 L118 42 L118 102 L98 126 L62 126 L42 102 L42 42 Z"
+                fill="none" stroke="#dfe4ec" stroke-width="4.5" stroke-linejoin="round" />
+          <path d="M80 27 L110 47 L110 98 L94 118 L66 118 L50 98 L50 47 Z"
+                fill="none" stroke="#717a8a" stroke-width="2" stroke-linejoin="round" opacity="0.6"/>
+          <path d="M80 38 L100 52 L100 92 L88 106 L72 106 L60 92 L60 52 Z"
+                fill="none" stroke="#ff223e" stroke-width="3" filter="url(#glowEffectN3)" />
+          <circle cx="80" cy="74" r="28" fill="url(#redGlowN3)" opacity="0.75" />
+          <g transform="translate(68, 62)">
+            <rect x="3" y="10" width="18" height="14" rx="2.5" fill="#e6142c" stroke="#ff475b" stroke-width="1.5" />
+            <path d="M6 10 V6 A6 6 0 0 1 18 6 V10" fill="none" stroke="#ff6b7b" stroke-width="2.5" stroke-linecap="round" />
+            <circle cx="12" cy="16" r="2" fill="#ffffff" />
+            <path d="M12 18 V21" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+    <h1 class="system-title">F.A.C.A</h1>
+    <p class="system-subtitle">MINISTÉRIO DO MEIO AMBIENTE</p>
+  </header>
+
+  <!-- Layout Principal: Menu Lateral Cumulativo (Nível 1 + 2 + 3) + Telas de Nível 3 -->
+  <div class="dashboard-layout">
+
+    <!-- Menu Lateral (Role Nível 3 vê TODO o menu: Nível 1 + Nível 2 + Nível 3) -->
+    <div id="sidebar-menu-container"></div>
+
+    <!-- Área Principal de Conteúdo Nível 3 -->
+    <main class="dashboard-workspace">
+
+      <!-- ==================================================================
+           ABA 1: HISTÓRICO DE ACESSOS / AUDITORIA GLOBAL (#historico)
+           Fiel à imagem de Nível 3, porém SEM dados fictícios (aguardando MySQL)
+           ================================================================== -->
+      <div class="tab-screen active" id="tab-historico" data-tab-panel="historico">
+        <section class="panel-main-card" aria-label="Nível 3 — Auditoria Global e Monitoramento">
+          <div class="panel-title-bar">
+            <div class="panel-title-left">
+              <span class="panel-grid-icon">
+                <svg viewBox="0 0 16 16" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6">
+                  <rect x="1.5" y="1.5" width="5" height="5" rx="1"/>
+                  <rect x="9.5" y="1.5" width="5" height="5" rx="1"/>
+                  <rect x="1.5" y="9.5" width="5" height="5" rx="1"/>
+                  <rect x="9.5" y="9.5" width="5" height="5" rx="1"/>
+                </svg>
+              </span>
+              <h2 class="panel-main-heading">NÍVEL 3 — AUDITORIA GLOBAL E MONITORAMENTO</h2>
             </div>
+            <span class="sql-status-pill">AGUARDANDO BANCO DE DADOS MYSQL</span>
           </div>
 
-          <button type="button" class="btn-toggle-menu" id="btn-toggle-menu" aria-label="Esconder ou mostrar menu" title="Esconder menu (mostrar apenas a logo)">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" id="icon-toggle-menu">
-              <polyline points="15 18 9 12 15 6"></polyline>
-            </svg>
-          </button>
-        </div>
+          <div class="audit-split-grid">
 
-        <nav class="sidebar-nav">
-          <!-- BLOCO NÍVEL 1: Visível para Roles de Nível 1, 2 e 3 -->
-          <div class="menu-level-group" data-menu-nivel="1">
-            <div class="menu-level-header">
-              <svg class="level-grid-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="3" width="7" height="7" rx="1"/>
-                <rect x="14" y="3" width="7" height="7" rx="1"/>
-                <rect x="3" y="14" width="7" height="7" rx="1"/>
-                <rect x="14" y="14" width="7" height="7" rx="1"/>
-              </svg>
-              <div class="menu-level-title">NÍVEL 1 <span>(Relatórios)</span></div>
-            </div>
-            <ul class="menu-items-list">
-              <li>
-                <button type="button" class="menu-item-btn" data-sql-action="relatorio-estatisticas">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="18" y1="20" x2="18" y2="10"/>
-                    <line x1="12" y1="20" x2="12" y2="4"/>
-                    <line x1="6" y1="20" x2="6" y2="14"/>
+            <!-- COLUNA ESQUERDA: SESSÕES ATIVAS (Sem dados — pré-configurado para MySQL) -->
+            <div class="audit-col-left">
+              <div class="subpanel-header">
+                <h3 class="subpanel-title">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                    <line x1="8" y1="21" x2="16" y2="21"/>
+                    <line x1="12" y1="17" x2="12" y2="21"/>
                   </svg>
-                  <span>SÍNTESE DE ESTATÍSTICAS</span>
-                </button>
-              </li>
-              <li>
-                <button type="button" class="menu-item-btn" data-sql-action="panorama-toxinas">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="3"/>
-                    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4"/>
-                  </svg>
-                  <span>PANORAMA DE TOXINAS</span>
-                </button>
-              </li>
-              <li>
-                <button type="button" class="menu-item-btn" data-sql-action="historico-alertas">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-                    <line x1="12" y1="9" x2="12" y2="13"/>
-                    <line x1="12" y1="17" x2="12.01" y2="17"/>
-                  </svg>
-                  <span>HISTÓRICO DE ALERTAS</span>
-                </button>
-              </li>
-              <li>
-                <button type="button" class="menu-item-btn" data-sql-action="gerador-pdf">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                    <polyline points="14 2 14 8 20 8"/>
-                  </svg>
-                  <span>GERADOR PDF</span>
-                </button>
-              </li>
-            </ul>
-          </div>
+                  <span>SESSÕES ATIVAS</span>
+                </h3>
+                <a href="#adicionar" class="btn-novo-usuario" style="text-decoration: none;">
+                  <span>+ NOVO USUÁRIO</span>
+                </a>
+              </div>
 
-          <!-- BLOCO NÍVEL 2: Visível para Roles de Nível 2 e 3 -->
-          <div class="menu-level-group" data-menu-nivel="2">
-            <div class="menu-level-header">
-              <svg class="level-grid-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="3" width="7" height="7" rx="1"/>
-                <rect x="14" y="3" width="7" height="7" rx="1"/>
-                <rect x="3" y="14" width="7" height="7" rx="1"/>
-                <rect x="14" y="14" width="7" height="7" rx="1"/>
-              </svg>
-              <div class="menu-level-title">NÍVEL 2 <span>(Cofre)</span></div>
+              <!--
+                [PONTO DE ENTRADA MYSQL - SESSÕES ATIVAS]
+                Query: SELECT u.nome AS name, n.descricao, s.data_inicio AS data, s.ultimo_acesso AS litm
+                       FROM sessoes_ativas s INNER JOIN usuarios u ON s.usuario_id = u.id
+                       INNER JOIN niveis_acesso n ON u.nivel_acesso = n.id;
+              -->
+              <div class="cyber-table-wrap">
+                <table class="cyber-table" id="tabela-sessoes-ativas">
+                  <thead>
+                    <tr>
+                      <th>NAME</th>
+                      <th>DESCRIÇÃO</th>
+                      <th>DATA</th>
+                      <th>LITM</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tbody-sessoes-ativas">
+                    <tr class="sql-empty-row">
+                      <td colspan="4">Sem dados — Pré-configurado para receber `sessoes_ativas` do MySQL.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
-            <ul class="menu-items-list">
-              <li>
-                <button type="button" class="menu-item-btn" data-sql-action="cofre-seguro">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                  </svg>
-                  <span>COFRE SEGURO <span class="muted-tag">(Status)</span></span>
-                </button>
-              </li>
-              <li>
-                <button type="button" class="menu-item-btn" data-sql-action="inventario-toxinas">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <ellipse cx="12" cy="5" rx="9" ry="3"/>
-                    <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
-                    <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
-                  </svg>
-                  <span>INVENTÁRIO DE TOXINAS</span>
-                </button>
-              </li>
-              <li>
-                <button type="button" class="menu-item-btn" data-sql-action="autenticacao-facial">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/>
-                    <circle cx="12" cy="11" r="3"/>
-                    <path d="M8 17a4 4 0 0 1 8 0"/>
-                  </svg>
-                  <span>AUTENTICAÇÃO FACIAL</span>
-                </button>
-              </li>
-            </ul>
-          </div>
 
-          <!-- BLOCO NÍVEL 3: Visível EXCLUSIVAMENTE para Role de Nível 3 -->
-          <div class="menu-level-group active-level" data-menu-nivel="3">
-            <div class="menu-level-header">
-              <svg class="level-grid-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14 2 14 8 20 8"/>
-                <line x1="16" y1="13" x2="8" y2="13"/>
-                <line x1="16" y1="17" x2="8" y2="17"/>
-              </svg>
-              <div class="menu-level-title">NÍVEL 3 <span>(Auditoria)</span></div>
-            </div>
-            <ul class="menu-items-list">
-              <li>
-                <button type="button" class="menu-item-btn active" data-sql-action="historico-acessos">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                    <circle cx="9" cy="7" r="4"/>
-                    <circle cx="19" cy="11" r="3"/>
+            <!-- COLUNA DIREITA: HISTÓRICO DE ACESSOS (Sem dados — pré-configurado para MySQL) -->
+            <div class="audit-col-right">
+              <div class="subpanel-header">
+                <h3 class="subpanel-title">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="8" y1="6" x2="21" y2="6"/>
+                    <line x1="8" y1="12" x2="21" y2="12"/>
+                    <line x1="8" y1="18" x2="21" y2="18"/>
+                    <line x1="3" y1="6" x2="3.01" y2="6"/>
+                    <line x1="3" y1="12" x2="3.01" y2="12"/>
+                    <line x1="3" y1="18" x2="3.01" y2="18"/>
                   </svg>
                   <span>HISTÓRICO DE ACESSOS</span>
-                </button>
-              </li>
-              <li>
-                <button type="button" class="menu-item-btn" data-sql-action="adicionar-usuario">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-                    <line x1="12" y1="5" x2="12" y2="19"/>
-                    <line x1="5" y1="12" x2="19" y2="12"/>
-                  </svg>
-                  <span>ADICIONAR</span>
-                </button>
-              </li>
-              <li>
-                <button type="button" class="menu-item-btn" data-sql-action="desbloquear-conta">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                    <path d="M7 11V7a5 5 0 0 1 9.9-1"/>
-                  </svg>
-                  <span>DESBLOQUEAR CONTA</span>
-                </button>
-              </li>
-            </ul>
-          </div>
-        </nav>
-      </div>
-
-      <!-- Rodapé do Menu: ACESSO (Login) -->
-      <div class="sidebar-footer">
-        <a href="index.html" class="btn-sidebar-login">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-          </svg>
-          <span>ACESSO <span class="sub">(Login)</span></span>
-        </a>
-      </div>
-    </aside>
-
-    <!-- ======================================================================
-         CONTEÚDO PRINCIPAL DA TELA DE NÍVEL 3
-         ====================================================================== -->
-    <div class="nivel3-main-area">
-
-      <!-- PAINEL SUPERIOR: NÍVEL 3 — AUDITORIA GLOBAL E MONITORAMENTO -->
-      <section class="audit-panel-card" aria-label="Nível 3 - Auditoria Global e Monitoramento">
-        <div class="audit-panel-header">
-          <div class="audit-title-group">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="3" width="7" height="7" rx="1"/>
-              <rect x="14" y="3" width="7" height="7" rx="1"/>
-              <rect x="3" y="14" width="7" height="7" rx="1"/>
-              <rect x="14" y="14" width="7" height="7" rx="1"/>
-            </svg>
-            <h2>NÍVEL 3 — AUDITORIA GLOBAL E MONITORAMENTO</h2>
-          </div>
-
-          <!-- Seletor integrado ao cabeçalho do painel (sem sobreposição) -->
-          <div class="rbac-preview-bar" aria-label="Filtro de Role do Menu">
-            <span class="rbac-preview-label" id="rbac-role-indicator">MENU: NÍVEL 3 COMPLETO</span>
-            <div class="rbac-preview-buttons">
-              <button type="button" class="btn-role-switch active" data-role-preview="3" title="Usuários Nível 3: visualizam tudo do menu (Níveis 1, 2 e 3)">
-                ROLE NÍVEL 3
-              </button>
-              <button type="button" class="btn-role-switch" data-role-preview="2" title="Usuários Nível 2: visualizam tudo do Nível 2 e Nível 1">
-                ROLE NÍVEL 2
-              </button>
-              <button type="button" class="btn-role-switch" data-role-preview="1" title="Usuários Nível 1: visualizam somente a parte de Nível 1">
-                ROLE NÍVEL 1
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div class="audit-split-grid">
-
-          <!-- COLUNA ESQUERDA: SESSÕES ATIVAS -->
-          <div class="sessions-column">
-            <div class="column-subheader">
-              <div class="column-subheader-title">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
-                  <line x1="8" y1="21" x2="16" y2="21"/>
-                  <line x1="12" y1="17" x2="12" y2="21"/>
-                </svg>
-                <span>SESSÕES ATIVAS</span>
-              </div>
-              <button type="button" class="btn-novo-usuario" data-sql-action="adicionar-usuario">
-                <span>+ NOVO USUÁRIO</span>
-              </button>
-            </div>
-
-            <div class="sessions-table-wrapper">
-              <table class="sessions-table" aria-label="Tabela de Sessões Ativas">
-                <thead>
-                  <tr>
-                    <th>NAME</th>
-                    <th>DESCRIÇÃO</th>
-                    <th>DATA</th>
-                    <th>ULTM</th>
-                  </tr>
-                </thead>
-                <tbody id="tbody-sessoes-ativas">
-                  <!--
-                    ====================================================================
-                    [GRAMÁTICA FIXA PARA PREENCHIMENTO VIA MYSQL / DOCKER]
-                    Tabela SQL: `sessoes_ativas` INNER JOIN `usuarios`
-                    Quando o banco estiver conectado, cada linha seguirá este formato:
-                    <tr>
-                      <td>{{linha.nome_usuario}}</td>
-                      <td>{{linha.descricao}}</td>
-                      <td>{{linha.data_sessao}}</td>
-                      <td>{{linha.ultimo_acesso}}</td>
-                    </tr>
-                    ====================================================================
-                  -->
-                  <tr>
-                    <td class="sql-slot-muted">[SQL: nome_usuario]</td>
-                    <td class="sql-slot-muted">[SQL: descricao]</td>
-                    <td class="sql-slot-muted">--/--/----</td>
-                    <td class="sql-slot-muted">--/--/----</td>
-                  </tr>
-                  <tr>
-                    <td class="sql-slot-muted">[SQL: nome_usuario]</td>
-                    <td class="sql-slot-muted">[SQL: descricao]</td>
-                    <td class="sql-slot-muted">--/--/----</td>
-                    <td class="sql-slot-muted">--/--/----</td>
-                  </tr>
-                  <tr>
-                    <td class="sql-slot-muted">[SQL: nome_usuario]</td>
-                    <td class="sql-slot-muted">[SQL: descricao]</td>
-                    <td class="sql-slot-muted">--/--/----</td>
-                    <td class="sql-slot-muted">--/--/----</td>
-                  </tr>
-                  <tr>
-                    <td class="sql-slot-muted">[SQL: nome_usuario]</td>
-                    <td class="sql-slot-muted">[SQL: descricao]</td>
-                    <td class="sql-slot-muted">--/--/----</td>
-                    <td class="sql-slot-muted">--/--/----</td>
-                  </tr>
-                  <tr>
-                    <td class="sql-slot-muted">[SQL: nome_usuario]</td>
-                    <td class="sql-slot-muted">[SQL: descricao]</td>
-                    <td class="sql-slot-muted">--/--/----</td>
-                    <td class="sql-slot-muted">--/--/----</td>
-                  </tr>
-                  <tr>
-                    <td class="sql-slot-muted">[SQL: nome_usuario]</td>
-                    <td class="sql-slot-muted">[SQL: descricao]</td>
-                    <td class="sql-slot-muted">--/--/----</td>
-                    <td class="sql-slot-muted">--/--/----</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <!-- Divisor Vertical -->
-          <div class="audit-vertical-divider" aria-hidden="true"></div>
-
-          <!-- COLUNA DIREITA: HISTÓRICO DE ACESSOS -->
-          <div class="history-column">
-            <div class="column-subheader">
-              <div class="column-subheader-title">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <line x1="8" y1="6" x2="21" y2="6"/>
-                  <line x1="8" y1="12" x2="21" y2="12"/>
-                  <line x1="8" y1="18" x2="21" y2="18"/>
-                  <line x1="3" y1="6" x2="3.01" y2="6"/>
-                  <line x1="3" y1="12" x2="3.01" y2="12"/>
-                  <line x1="3" y1="18" x2="3.01" y2="18"/>
-                </svg>
-                <span>HISTÓRICO DE ACESSOS</span>
-              </div>
-              <button type="button" class="btn-novo-usuario" data-sql-action="adicionar-usuario">
-                <span>+ NOVO USUÁRIO</span>
-              </button>
-            </div>
-
-            <div class="history-inner-grid">
-              <!-- Sub-coluna Esquerda: TIMELINE -->
-              <div>
-                <div class="timeline-column-label">TIMELINE</div>
-                <ul class="timeline-list" id="lista-timeline-sql">
-                  <!--
-                    ====================================================================
-                    [GRAMÁTICA FIXA PARA PREENCHIMENTO VIA MYSQL / DOCKER]
-                    Coluna SQL: `historico_acessos.data_hora` (DATETIME)
-                    Formato esperado:
-                    <li class="timeline-item active">
-                      <span class="timeline-node"></span>
-                      <div class="timeline-pill">{{evento.data_hora}}</div>
-                    </li>
-                    ====================================================================
-                  -->
-                  <li class="timeline-item active">
-                    <span class="timeline-node"></span>
-                    <div class="timeline-pill">--/--/---- --:--:--</div>
-                  </li>
-                  <li class="timeline-item">
-                    <span class="timeline-node"></span>
-                    <div class="timeline-pill">--/--/---- --:--:--</div>
-                  </li>
-                  <li class="timeline-item">
-                    <span class="timeline-node"></span>
-                    <div class="timeline-pill">--/--/---- --:--:--</div>
-                  </li>
-                  <li class="timeline-item">
-                    <span class="timeline-node"></span>
-                    <div class="timeline-pill">--/--/---- --:--:--</div>
-                  </li>
-                  <li class="timeline-item">
-                    <span class="timeline-node"></span>
-                    <div class="timeline-pill">--/--/---- --:--:--</div>
-                  </li>
-                  <li class="timeline-item">
-                    <span class="timeline-node"></span>
-                    <div class="timeline-pill">--/--/---- --:--:--</div>
-                  </li>
-                </ul>
+                </h3>
+                <a href="#adicionar" class="btn-novo-usuario" style="text-decoration: none;">
+                  <span>+ NOVO USUÁRIO</span>
+                </a>
               </div>
 
-              <!-- Sub-coluna Direita: Card EVENTO -->
-              <div class="evento-card">
-                <div class="evento-card-header">EVENTO</div>
-                <ul class="evento-list" id="lista-eventos-sql">
-                  <!--
-                    ====================================================================
-                    [GRAMÁTICA FIXA PARA PREENCHIMENTO VIA MYSQL / DOCKER]
-                    Colunas SQL: `titulo_evento`, `descricao_evento`, `requer_desbloqueio`
-                    Formato esperado:
-                    <li class="evento-row">
-                      <span class="evento-dot"></span>
-                      <div class="evento-info">
-                        <span class="evento-title">{{evento.titulo_evento}}</span>
-                        <span class="evento-desc">{{evento.descricao_evento}}</span>
-                      </div>
-                      <button type="button" class="btn-unblock" data-unblock-id="{{evento.usuario_id}}">UNBLOCK</button>
-                    </li>
-                    ====================================================================
-                  -->
-                  <li class="evento-row">
-                    <span class="evento-dot"></span>
-                    <div class="evento-info">
-                      <span class="evento-title">[SQL: titulo_evento]</span>
-                      <span class="evento-desc">[SQL: descricao_evento]</span>
-                    </div>
-                    <button type="button" class="btn-unblock" data-sql-action="desbloquear-conta">UNBLOCK</button>
-                  </li>
-                  <li class="evento-row">
-                    <span class="evento-dot"></span>
-                    <div class="evento-info">
-                      <span class="evento-title">[SQL: titulo_evento]</span>
-                      <span class="evento-desc">[SQL: descricao_evento]</span>
-                    </div>
-                    <button type="button" class="btn-unblock" data-sql-action="desbloquear-conta">UNBLOCK</button>
-                  </li>
-                  <li class="evento-row">
-                    <span class="evento-dot"></span>
-                    <div class="evento-info">
-                      <span class="evento-title">[SQL: titulo_evento]</span>
-                      <span class="evento-desc">[SQL: descricao_evento]</span>
-                    </div>
-                    <button type="button" class="btn-unblock" data-sql-action="desbloquear-conta">UNBLOCK</button>
-                  </li>
-                  <li class="evento-row">
-                    <span class="evento-dot"></span>
-                    <div class="evento-info">
-                      <span class="evento-title">[SQL: titulo_evento]</span>
-                      <span class="evento-desc">[SQL: descricao_evento]</span>
-                    </div>
-                  </li>
-                  <li class="evento-row">
-                    <span class="evento-dot"></span>
-                    <div class="evento-info">
-                      <span class="evento-title">[SQL: titulo_evento]</span>
-                      <span class="evento-desc">[SQL: descricao_evento]</span>
-                    </div>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
-
-        </div>
-      </section>
-
-      <!-- LINHA INFERIOR: 3 WIDGETS (ALERTAS | PANORAMA DE TOXINAS | COFRE) -->
-      <section class="bottom-widgets-grid" aria-label="Indicadores de Monitoramento">
-
-        <!-- WIDGET 1: ALERTAS -->
-        <div class="widget-card" id="widget-alertas">
-          <div class="widget-header">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-              <line x1="12" y1="9" x2="12" y2="13"/>
-              <line x1="12" y1="17" x2="12.01" y2="17"/>
-            </svg>
-            <h3>ALERTAS</h3>
-          </div>
-
-          <div class="alerts-chart-box">
-            <div class="alerts-y-axis">
-              <span>200</span>
-              <span>150</span>
-              <span>100</span>
-              <span>50</span>
-              <span>0</span>
-            </div>
-            <div class="alerts-svg-container">
               <!--
-                [GRAMÁTICA FIXA MYSQL]:
-                O atributo `d` de `#alerts-line-path` e `#alerts-area-path` é atualizado
-                pela função `atualizarGraficoAlertas(serieNumericaSQL)` em `painel-nivel3.js`.
+                [PONTO DE ENTRADA MYSQL - TIMELINE E EVENTO]
+                Query: SELECT id, data_hora, titulo_evento, descricao_evento, conta_bloqueada
+                       FROM logs_auditoria ORDER BY data_hora DESC;
               -->
-              <svg class="alerts-svg" viewBox="0 0 320 96" preserveAspectRatio="none">
-                <defs>
-                  <linearGradient id="alertAreaGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stop-color="#ff2238" stop-opacity="0.38"/>
-                    <stop offset="100%" stop-color="#ff2238" stop-opacity="0.0"/>
-                  </linearGradient>
-                </defs>
-                <!-- Linhas de Grade Horizontais -->
-                <line x1="0" y1="8" x2="320" y2="8" stroke="rgba(255,255,255,0.07)" stroke-width="1"/>
-                <line x1="0" y1="29" x2="320" y2="29" stroke="rgba(255,255,255,0.07)" stroke-width="1"/>
-                <line x1="0" y1="50" x2="320" y2="50" stroke="rgba(255,255,255,0.07)" stroke-width="1"/>
-                <line x1="0" y1="71" x2="320" y2="71" stroke="rgba(255,255,255,0.07)" stroke-width="1"/>
-                <line x1="0" y1="92" x2="320" y2="92" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+              <div class="history-columns">
+                <div class="timeline-col">
+                  <div class="timeline-col-label">TIMELINE</div>
+                  <div id="lista-timeline" class="sql-empty-box">
+                    Sem dados (Aguardando SQL)
+                  </div>
+                </div>
 
-                <!-- Área e Curva de Alertas (Aguardando série histórica do MySQL) -->
-                <path id="alerts-area-path"
-                      d="M 0 84 C 20 76, 35 66, 52 72 C 70 78, 92 38, 114 38 C 136 38, 148 64, 168 58 C 188 52, 205 34, 224 22 C 243 10, 265 44, 282 40 C 296 36, 308 16, 320 6 L 320 92 L 0 92 Z"
-                      fill="url(#alertAreaGrad)"/>
-                <path id="alerts-line-path"
-                      d="M 0 84 C 20 76, 35 66, 52 72 C 70 78, 92 38, 114 38 C 136 38, 148 64, 168 58 C 188 52, 205 34, 224 22 C 243 10, 265 44, 282 40 C 296 36, 308 16, 320 6"
-                      fill="none"
-                      stroke="#ff263c"
-                      stroke-width="2.2"
-                      stroke-linecap="round"/>
+                <div class="evento-box">
+                  <div class="evento-box-title">EVENTO</div>
+                  <div id="lista-eventos" class="sql-empty-box">
+                    Sem eventos — Pré-configurado para receber `logs_auditoria` do MySQL.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- LINHA INFERIOR: 3 WIDGETS (Sem dados fixos — pré-configurados para o MySQL) -->
+        <section class="bottom-widgets-row" aria-label="Indicadores Globais do Sistema">
+
+          <!-- WIDGET 1: ALERTAS -->
+          <div class="widget-card">
+            <div class="widget-header">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
               </svg>
+              <span>ALERTAS</span>
+            </div>
+            <div class="alerts-chart-container">
+              <div class="chart-y-axis">
+                <span>200</span>
+                <span>150</span>
+                <span>100</span>
+                <span>50</span>
+                <span>0</span>
+              </div>
+              <div class="chart-svg-wrap">
+                <svg viewBox="0 0 280 85" preserveAspectRatio="none">
+                  <line x1="0" y1="10" x2="280" y2="10" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+                  <line x1="0" y1="28" x2="280" y2="28" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+                  <line x1="0" y1="46" x2="280" y2="46" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+                  <line x1="0" y1="64" x2="280" y2="64" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+                  <line x1="0" y1="80" x2="280" y2="80" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+                  <!-- Curva vazia aguardando dados do MySQL -->
+                  <g id="sql-n3-chart-alertas"></g>
+                </svg>
+              </div>
             </div>
           </div>
+
+          <!-- WIDGET 2: PANORAMA DE TOXINAS -->
+          <div class="widget-card">
+            <div class="widget-header">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+              </svg>
+              <span>PANORAMA DE TOXINAS</span>
+            </div>
+            <div class="toxin-bars-list" id="widget-panorama-toxinas">
+              <div class="toxin-bar-row">
+                <span class="toxin-name">DIOXINAS</span>
+                <div class="toxin-track">
+                  <div class="toxin-fill" id="sql-bar-dioxinas" style="width: 0%;"></div>
+                </div>
+                <span class="toxin-target-pct" id="sql-pct-dioxinas">--%</span>
+              </div>
+
+              <div class="toxin-bar-row">
+                <span class="toxin-name">PFAS</span>
+                <div class="toxin-track">
+                  <div class="toxin-fill" id="sql-bar-pfas" style="width: 0%;"></div>
+                </div>
+                <span class="toxin-target-pct" id="sql-pct-pfas">--%</span>
+              </div>
+
+              <div class="toxin-bar-row">
+                <span class="toxin-name">FOSFATOS</span>
+                <div class="toxin-track">
+                  <div class="toxin-fill" id="sql-bar-fosfatos" style="width: 0%;"></div>
+                </div>
+                <span class="toxin-target-pct" id="sql-pct-fosfatos">--%</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- WIDGET 3: COFRE -->
+          <div class="widget-card">
+            <div class="widget-header">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <circle cx="12" cy="12" r="4"/>
+              </svg>
+              <span>COFRE</span>
+            </div>
+            <div class="vault-gauge-wrap">
+              <svg class="vault-gauge-svg" viewBox="0 0 120 95">
+                <path d="M 22 78 A 42 42 0 1 1 98 78"
+                      fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="8" stroke-linecap="round"/>
+                <path id="sql-arc-cofre" d="M 22 78 A 42 42 0 1 1 98 78"
+                      fill="none" stroke="#2ed573" stroke-width="8" stroke-linecap="round"
+                      stroke-dasharray="210" stroke-dashoffset="210"/>
+              </svg>
+              <div class="vault-gauge-value" id="valor-cofre-sql">--%</div>
+            </div>
+          </div>
+
+        </section>
+      </div>
+
+      <!-- ==================================================================
+           ABA 2: ADICIONAR (+ NOVO USUÁRIO) (#adicionar)
+           Pré-configurada para INSERT INTO usuarios no MySQL
+           ================================================================== -->
+      <section class="panel-main-card tab-screen" id="tab-adicionar" data-tab-panel="adicionar">
+        <div class="screen-header-block">
+          <h2 class="screen-main-title">ADICIONAR NOVO OPERADOR</h2>
+          <p class="screen-subtitle">CADASTRO DE CREDENCIAIS E ROLE NO BANCO DE DADOS MYSQL</p>
         </div>
 
-        <!-- WIDGET 2: PANORAMA DE TOXINAS -->
-        <div class="widget-card" id="widget-toxinas">
-          <div class="widget-header">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-            </svg>
-            <h3>PANORAMA DE TOXINAS</h3>
+        <!--
+          [PONTO DE ENTRADA MYSQL - ADICIONAR USUÁRIO]
+          Query: INSERT INTO usuarios (nome, cpf, matricula, nivel_acesso, senha_hash) VALUES (?, ?, ?, ?, ?);
+        -->
+        <form id="form-novo-usuario-sql" class="pdf-form-col" style="max-width: 580px;" autocomplete="off">
+          <div>
+            <label class="pdf-field-label" for="sql-input-nome">Nome do Operador</label>
+            <input type="text" id="sql-input-nome" class="cyber-input-control" placeholder="Coluna MySQL: nome" required />
           </div>
 
-          <!--
-            [GRAMÁTICA FIXA MYSQL]:
-            Barras vinculadas aos IDs `#bar-dioxinas`, `#bar-pfas`, `#bar-fosfatos`.
-            Atualizadas via `atualizarPanoramaToxinas({ dioxinas_pct, pfas_pct, fosfatos_pct })`.
-          -->
-          <div class="toxins-bars-list">
-            <div class="toxin-bar-row">
-              <span class="toxin-name">DIOXINAS</span>
-              <div class="toxin-track">
-                <div class="toxin-fill" id="bar-dioxinas" style="width: 75%;"></div>
-                <span class="toxin-inner-pct" id="label-inner-dioxinas">75%</span>
-              </div>
-              <span class="toxin-limit-pct" id="label-max-dioxinas">100%</span>
+          <div class="pdf-date-row">
+            <div>
+              <label class="pdf-field-label" for="sql-input-cpf">CPF</label>
+              <input type="text" id="sql-input-cpf" class="cyber-input-control" placeholder="Coluna MySQL: cpf" maxlength="14" required />
             </div>
-
-            <div class="toxin-bar-row">
-              <span class="toxin-name">PFAS</span>
-              <div class="toxin-track">
-                <div class="toxin-fill" id="bar-pfas" style="width: 38%;"></div>
-                <span class="toxin-inner-pct" id="label-inner-pfas">38%</span>
-              </div>
-              <span class="toxin-limit-pct" id="label-max-pfas">50%</span>
-            </div>
-
-            <div class="toxin-bar-row">
-              <span class="toxin-name">FOSFATOS</span>
-              <div class="toxin-track">
-                <div class="toxin-fill" id="bar-fosfatos" style="width: 88%;"></div>
-                <span class="toxin-inner-pct" id="label-inner-fosfatos">88%</span>
-              </div>
-              <span class="toxin-limit-pct" id="label-max-fosfatos">88%</span>
+            <div>
+              <label class="pdf-field-label" for="sql-input-matricula">Matrícula Funcional</label>
+              <input type="text" id="sql-input-matricula" class="cyber-input-control" placeholder="Coluna MySQL: matricula" required />
             </div>
           </div>
-        </div>
 
-        <!-- WIDGET 3: COFRE -->
-        <div class="widget-card" id="widget-cofre">
-          <div class="widget-header">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="3" width="18" height="18" rx="2"/>
-              <circle cx="12" cy="12" r="4"/>
-              <line x1="12" y1="8" x2="12" y2="12"/>
-            </svg>
-            <h3>COFRE</h3>
+          <div class="pdf-date-row">
+            <div>
+              <label class="pdf-field-label" for="sql-select-role">Nível de Acesso (Role)</label>
+              <select id="sql-select-role" class="cyber-select-control" required>
+                <option value="1">Nível 1 (Relatórios)</option>
+                <option value="2">Nível 2 (Cofre + Relatórios)</option>
+                <option value="3">Nível 3 (Auditoria Completa)</option>
+              </select>
+            </div>
+            <div>
+              <label class="pdf-field-label" for="sql-input-senha">Senha Inicial</label>
+              <input type="password" id="sql-input-senha" class="cyber-input-control" placeholder="Coluna MySQL: senha_hash" required />
+            </div>
           </div>
 
-          <!--
-            [GRAMÁTICA FIXA MYSQL]:
-            Medidor circular vinculado a `#cofre-gauge-value` e `#cofre-gauge-arc`.
-            Atualizado via `atualizarMedidorCofre(ocupacaoPctSQL)`.
-          -->
-          <div class="vault-gauge-box">
-            <svg class="vault-gauge-svg" viewBox="0 0 120 100">
-              <defs>
-                <linearGradient id="vaultGaugeGrad" x1="0%" y1="100%" x2="100%" y2="100%">
-                  <stop offset="0%" stop-color="#ff1e34"/>
-                  <stop offset="50%" stop-color="#f5a623"/>
-                  <stop offset="100%" stop-color="#2ed573"/>
-                </linearGradient>
-              </defs>
-              <!-- Trilha de Fundo do Arco -->
-              <path d="M 20 82 A 44 44 0 1 1 100 82"
-                    fill="none"
-                    stroke="rgba(255, 255, 255, 0.08)"
-                    stroke-width="9"
-                    stroke-linecap="round"/>
-              <!-- Arco Colorido Ativo -->
-              <path id="cofre-gauge-arc"
-                    d="M 20 82 A 44 44 0 1 1 100 82"
-                    fill="none"
-                    stroke="url(#vaultGaugeGrad)"
-                    stroke-width="9"
-                    stroke-linecap="round"
-                    stroke-dasharray="205"
-                    stroke-dashoffset="49"/>
-            </svg>
-            <span class="vault-gauge-value" id="cofre-gauge-value">76%</span>
-          </div>
-        </div>
+          <div class="feedback-msg" id="modal-sql-feedback"></div>
 
+          <button type="submit" class="btn-red-outline-large">
+            <span>CADASTRAR OPERADOR (AGUARDANDO MYSQL)</span>
+          </button>
+        </form>
       </section>
 
-    </div>
+      <!-- ==================================================================
+           ABA 3: DESBLOQUEAR CONTA (#desbloquear)
+           Pré-configurada para UPDATE usuarios SET bloqueado = 0 no MySQL
+           ================================================================== -->
+      <section class="panel-main-card tab-screen" id="tab-desbloquear" data-tab-panel="desbloquear">
+        <div class="screen-header-block">
+          <h2 class="screen-main-title">DESBLOQUEAR CONTA</h2>
+          <p class="screen-subtitle">LIBERAÇÃO DE TERMINAIS E OPERADORES BLOQUEADOS POR TENTATIVAS EXCEDIDAS</p>
+        </div>
+
+        <!--
+          [PONTO DE ENTRADA MYSQL - DESBLOQUEAR CONTA]
+          Query Listagem: SELECT id, nome, cpf, tentativas_falhas, bloqueado_ate FROM usuarios WHERE bloqueado = 1;
+          Query Ação UNBLOCK: UPDATE usuarios SET bloqueado = 0, tentativas_falhas = 0 WHERE id = ?;
+        -->
+        <div class="alerts-table-card">
+          <table class="flat-cyber-table" id="tabela-contas-bloqueadas">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Operador</th>
+                <th>CPF</th>
+                <th>Tentativas</th>
+                <th>Status</th>
+                <th>Ação</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-contas-bloqueadas">
+              <tr class="sql-empty-row">
+                <td colspan="6">Sem dados — Pré-configurado para receber `SELECT * FROM usuarios WHERE bloqueado = 1` do MySQL.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    </main>
   </div>
 
-  <!-- Toast Informativo quando uma ação que depende do MySQL/Docker é acionada -->
-  <div class="sql-config-toast" id="sql-config-toast" role="status" aria-live="polite"></div>
-
-  <!-- Scripts de Configuração, Serviços, Menu por Níveis e Lógica da Tela Nível 3 -->
-  <script src="src/js/particulas.js"></script>
+  <!-- Scripts JavaScript -->
   <script src="src/js/config/configuracao-banco.js"></script>
   <script src="src/js/services/servico-api.js"></script>
+  <script src="src/js/particulas.js"></script>
   <script src="src/js/components/menu-niveis.js"></script>
   <script src="src/js/painel-nivel3.js"></script>
 </body>

@@ -1,151 +1,128 @@
 /**
  * ============================================================================
  * F.A.C.A - Frente de Autenticação e Controle de Acesso
- * ARQUIVO DE CONFIGURAÇÃO: INTEGRAÇÃO FRONTEND (PYTHON) <-> BACKEND (MYSQL/DOCKER)
+ * Arquivo: src/js/config/configuracao-banco.js
+ * Descrição: Gramática fixa e estrutura de configuração para futura conexão
+ *            com o Banco de Dados MySQL (via Docker + Backend Python).
  * ============================================================================
  *
- * ARQUITETURA DO PROJETO:
- * - O Banco de Dados (MySQL) e o container Docker ficam no BACKEND (Python / FastAPI).
- * - Este FRONTEND será compactado e servido diretamente pelo Python posteriormente.
- * - NENHUM acesso ou credencial foi inventado neste arquivo.
- * - Abaixo estão apenas os comentários e a gramática fixa que serão necessários
- *   para configurar a comunicação quando o Backend Python + MySQL (Docker) estiverem prontos.
+ * IMPORTANTE:
+ * O banco de dados MySQL está em construção e será disponibilizado via Docker.
+ * Nenhum acesso ou credencial foi inventado neste arquivo.
+ * Quando o contêiner MySQL estiver ativo, basta descomentar e preencher
+ * os parâmetros abaixo conforme o arquivo docker-compose.yml / .env.
  */
 
-// ============================================================================
-// 1. GRAMÁTICA FIXA DE CONFIGURAÇÃO DA PONTE COM O BACKEND PYTHON (MYSQL/DOCKER)
-// ============================================================================
-const CONFIGURACAO_SISTEMA = {
+const CONFIGURACAO_BANCO = {
+  // Status da integração com o banco MySQL (manter false até receber o container Docker)
+  SQL_ATIVO: false,
+
+  // URL base onde o Backend Python (FastAPI/Flask) responderá conectado ao MySQL no Docker
+  API_BASE_URL: 'http://localhost:8000',
+
+  // ==========================================================================
+  // 1. GRAMÁTICA FIXA DE CONEXÃO MYSQL / DOCKER (PARA CONFIGURAÇÃO FUTURA)
+  // ==========================================================================
   /*
-   * [CONFIGURAR QUANDO O BACKEND PYTHON + DOCKER MYSQL ESTIVEREM DISPONÍVEIS]
+  MYSQL_DOCKER_CONFIG: {
+    HOST: 'localhost',          // Nome do serviço no docker-compose: 'db' ou 'faca_mysql_db'
+    PORT: 3306,                 // Porta padrão exposta pelo container MySQL
+    DATABASE: 'faca_db',        // Nome do schema principal criado no MySQL
+    USER: 'PREENCHER_USUARIO',  // Definir quando receber o acesso do banco
+    PASSWORD: 'PREENCHER_SENHA' // Definir quando receber o acesso do banco
+  },
+  */
+
+  // ==========================================================================
+  // 2. MAPEAMENTO DAS ROTAS QUE CONSUMIRÃO O MYSQL (POR ROLE / NÍVEL)
+  // ==========================================================================
+  ENDPOINTS_SQL: {
+    // Autenticação e Login (index.html)
+    LOGIN_CPF_SENHA: '/api/v1/auth/login',           // SELECT usuario WHERE cpf = ? AND senha_hash = ?
+    VALIDAR_BIOMETRIA: '/api/v1/auth/biometria',     // SELECT vetor_facial_128d WHERE usuario_id = ?
+
+    // Nível 1 — Relatórios (Role >= 1)
+    NIVEL_1: {
+      ESTATISTICAS: '/api/v1/nivel1/estatisticas',   // SELECT indicadores gerais
+      PANORAMA_TOXINAS: '/api/v1/nivel1/toxinas',    // SELECT * FROM toxinas WHERE nivel_requerido = 1
+      HISTORICO_ALERTAS: '/api/v1/nivel1/alertas',   // SELECT * FROM alertas WHERE nivel_visibilidade >= 1
+      GERADOR_PDF: '/api/v1/nivel1/relatorio-pdf'    // Gera relatório com dados do MySQL
+    },
+
+    // Nível 2 — Cofre (Role >= 2: acessa Nível 1 + Nível 2)
+    NIVEL_2: {
+      COFRE_STATUS: '/api/v1/nivel2/cofre-status',   // SELECT status_contencao, ocupacao FROM cofre_status
+      INVentario_TOXINAS: '/api/v1/nivel2/toxinas',  // SELECT * FROM toxinas WHERE nivel_requerido <= 2
+      AUTENTICACAO_FACIAL: '/api/v1/nivel2/biometria'// Telemetria PIVC vinculada ao operador Nível 2
+    },
+
+    // Nível 3 — Auditoria Global e Monitoramento (Role == 3: acessa Nível 1 + 2 + 3)
+    NIVEL_3: {
+      SESSOES_ATIVAS: '/api/v1/nivel3/sessoes',      // SELECT * FROM sessoes_ativas ORDER BY data_acesso DESC
+      HISTORICO_ACESSOS: '/api/v1/nivel3/auditoria', // SELECT * FROM logs_auditoria ORDER BY data_hora DESC
+      ADICIONAR_USUARIO: '/api/v1/nivel3/usuarios',  // INSERT INTO usuarios (...) VALUES (...)
+      DESBLOQUEAR_CONTA: '/api/v1/nivel3/desbloquear'// UPDATE usuarios SET bloqueado = 0, tentativas = 0 WHERE id = ?
+    }
+  },
+
+  // ==========================================================================
+  // 3. GRAMÁTICA SQL DE REFERÊNCIA (QUERIES ESPERADAS NO BACKEND PYTHON)
+  // ==========================================================================
+  /*
+   * -- [AUTENTICAÇÃO E ROLE]
+   * SELECT u.id, u.nome, u.cpf, u.nivel_acesso AS role_nivel, n.descricao
+   * FROM usuarios u
+   * INNER JOIN niveis_acesso n ON u.nivel_acesso = n.id
+   * WHERE u.cpf = :cpf AND u.senha_hash = :senha_hash AND u.bloqueado = 0;
    *
-   * Como o Frontend será compactado para rodar junto ao Python:
-   * - Se servido na mesma origem pelo FastAPI (StaticFiles / Templates):
-   *   URL_BASE_API: '' (caminho relativo, ex: '/autenticar', '/toxinas')
-   * - Se rodado separado em desenvolvimento apontando para o container Python/Docker:
-   *   URL_BASE_API: 'http://localhost:8000'
+   * -- [NÍVEL 3: SESSÕES ATIVAS]
+   * SELECT s.id, u.nome AS name, n.descricao, s.data_inicio AS data, s.ultimo_acesso AS litm
+   * FROM sessoes_ativas s
+   * INNER JOIN usuarios u ON s.usuario_id = u.id
+   * INNER JOIN niveis_acesso n ON u.nivel_acesso = n.id
+   * ORDER BY s.ultimo_acesso DESC;
    *
-   * Variáveis que o Backend Python utilizará para conectar ao container MySQL no Docker
-   * (apenas referência de gramática para alinhamento com o Backend):
-   *   DB_HOST     = 'mysql_container' (ou 'localhost')
-   *   DB_PORT     = 3306
-   *   DB_NAME     = '<nome_do_banco_mysql>'
-   *   DB_USER     = '<usuario_mysql>'
-   *   DB_PASSWORD = '<senha_mysql>'
+   * -- [NÍVEL 3: HISTÓRICO DE ACESSOS / TIMELINE E EVENTOS]
+   * SELECT l.id, l.data_hora AS timeline, l.titulo_evento, l.descricao_evento, l.conta_bloqueada, l.usuario_id
+   * FROM logs_auditoria l
+   * ORDER BY l.data_hora DESC;
+   *
+   * -- [NÍVEL 3: DESBLOQUEAR CONTA (BOTÃO UNBLOCK)]
+   * UPDATE usuarios SET bloqueado = 0, tentativas_falhas = 0 WHERE id = :usuario_id;
+   *
+   * -- [NÍVEL 3: ADICIONAR NOVO USUÁRIO (+ NOVO USUÁRIO)]
+   * INSERT INTO usuarios (nome, cpf, senha_hash, matricula, nivel_acesso, vetor_facial)
+   * VALUES (:nome, :cpf, :senha_hash, :matricula, :nivel_acesso, :vetor_facial);
+   *
+   * -- [PANORAMA DE TOXINAS / COFRE]
+   * SELECT codigo_amostra, nome_comum, percentual_contencao, nivel_requerido, status_contencao
+   * FROM toxinas
+   * WHERE nivel_requerido <= :role_usuario;
    */
 
-  URL_BASE_API: null, // Preencher com '' (mesma origem no Python) ou 'http://localhost:8000'
-
-  TEMPO_LIMITE_MS: 10000,
-
-  // Chaves de sessão no navegador (preenchidas somente após retorno real do Python/MySQL)
-  CHAVES_SESSAO: {
-    TOKEN: 'faca_token',
-    USUARIO: 'faca_usuario',
-    NIVEL_ACESSO: 'faca_nivel_acesso'
+  // ==========================================================================
+  // 4. DEFINIÇÃO DE ROLES E PERMISSÕES CUMULATIVAS DE MENU
+  // ==========================================================================
+  ROLES_PERMISSOES: {
+    1: {
+      role: 'NIVEL_1',
+      nomeExibicao: 'Nível 1 (Relatórios)',
+      niveisMenuPermitidos: [1], // Vê apenas o menu de Nível 1
+      paginaInicial: 'nivel1.html'
+    },
+    2: {
+      role: 'NIVEL_2',
+      nomeExibicao: 'Nível 2 (Cofre)',
+      niveisMenuPermitidos: [1, 2], // Vê tudo do Nível 1 e Nível 2
+      paginaInicial: 'nivel2.html'
+    },
+    3: {
+      role: 'NIVEL_3',
+      nomeExibicao: 'Nível 3 (Auditoria)',
+      niveisMenuPermitidos: [1, 2, 3], // Vê todo o menu (Nível 1, 2 e 3)
+      paginaInicial: 'nivel3.html'
+    }
   }
 };
 
-// ============================================================================
-// 2. GRAMÁTICA FIXA DAS ROTAS DO BACKEND PYTHON (QUE CONSULTAM O MYSQL)
-// ============================================================================
-const ROTAS_API_PYTHON = {
-  // Verificação de saúde da API Python + Container MySQL
-  STATUS_SERVIDOR: '/ping',
-
-  // Autenticação Etapa 1 (CPF e Senha validados pelo Python no MySQL)
-  LOGIN_CREDENCIAIS: '/login',
-
-  // Autenticação Etapa 2 (Biometria Facial processada no OpenCV e validada no MySQL)
-  AUTENTICAR_BIOMETRIA: '/autenticar',
-
-  // Rotas de Nível 1 (Relatórios)
-  SINTESE_ESTATISTICAS: '/relatorios/estatisticas',
-  PANORAMA_TOXINAS: '/relatorios/panorama-toxinas',
-  HISTORICO_ALERTAS: '/relatorios/alertas',
-  GERADOR_PDF: '/relatorios/gerar-pdf',
-
-  // Rotas de Nível 2 (Cofre)
-  STATUS_COFRE: '/cofre/status',
-  INVENTARIO_TOXINAS: '/toxinas',
-
-  // Rotas Exclusivas de Nível 3 (Auditoria Global e Monitoramento)
-  SESSOES_ATIVAS: '/auditoria/sessoes-ativas',
-  HISTORICO_ACESSOS: '/auditoria/historico-acessos',
-  CADASTRAR_USUARIO: '/cadastrar',
-  DESBLOQUEAR_CONTA: '/auditoria/desbloquear-conta'
-};
-
-// ============================================================================
-// 3. REGRA CUMULATIVA DOS NÍVEIS DE ACESSO NO MENU LATERAL
-// ============================================================================
-/**
- * Regra de visibilidade do Menu Lateral por Role (vinda do MySQL via Python):
- * - Nível 1: Visualiza SOMENTE a parte do menu de Nível 1 (Relatórios).
- * - Nível 2: Visualiza TUDO do menu de Nível 2 e Nível 1 (Relatórios + Cofre).
- * - Nível 3: Visualiza TUDO daquele menu (Nível 1 + Nível 2 + Nível 3 Auditoria).
- */
-const MATRIZ_NIVEIS_MENU = {
-  1: {
-    nivel: 1,
-    descricao: 'Nível 1 - Somente Menu de Nível 1 (Relatórios)',
-    menusLiberados: [1]
-  },
-  2: {
-    nivel: 2,
-    descricao: 'Nível 2 - Menu de Nível 2 e Nível 1 (Relatórios + Cofre)',
-    menusLiberados: [1, 2]
-  },
-  3: {
-    nivel: 3,
-    descricao: 'Nível 3 - Todo o Menu (Nível 1 + Nível 2 + Nível 3 Auditoria)',
-    menusLiberados: [1, 2, 3]
-  }
-};
-
-// ============================================================================
-// 4. GRAMÁTICA FIXA DOS DADOS ESPERADOS DO MYSQL (VIA PYTHON JSON)
-// ============================================================================
-/*
- * Quando o Backend Python retornar os dados do MySQL para a Tela de Nível 3,
- * a gramática esperada nos objetos JSON é:
- *
- * 1) Sessões Ativas (`sessoes_ativas`):
- *    [
- *      {
- *        "nome_usuario": "String (VARCHAR no MySQL)",
- *        "descricao":    "String (VARCHAR no MySQL)",
- *        "data_sessao":  "DD/MM/YYYY (DATE no MySQL)",
- *        "ultimo_acesso":"DD/MM/YYYY (DATE no MySQL)"
- *      }
- *    ]
- *
- * 2) Histórico de Acessos e Eventos (`historico_acessos`):
- *    [
- *      {
- *        "id_evento":          Number,
- *        "usuario_id":         Number,
- *        "data_hora":          "DD/MM/YYYY HH:mm:ss (DATETIME no MySQL)",
- *        "titulo_evento":      "String",
- *        "descricao_evento":   "String",
- *        "requer_desbloqueio": Boolean
- *      }
- *    ]
- *
- * 3) Indicadores Inferiores (Alertas, Panorama de Toxinas e Cofre):
- *    {
- *      "alertas_serie": [Number, ...], // Valores de 0 a 200
- *      "panorama_toxinas": {
- *        "dioxinas_pct": Number,       // 0 a 100
- *        "pfas_pct":     Number,       // 0 a 100
- *        "fosfatos_pct": Number        // 0 a 100
- *      },
- *      "cofre_ocupacao_pct": Number    // 0 a 100
- *    }
- */
-
-window.FACA_CONFIG = {
-  CONFIGURACAO_SISTEMA,
-  ROTAS_API_PYTHON,
-  MATRIZ_NIVEIS_MENU
-};
+window.CONFIGURACAO_BANCO = CONFIGURACAO_BANCO;
