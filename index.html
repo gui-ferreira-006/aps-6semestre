@@ -55,27 +55,6 @@
   </div>
 
   <!-- ========================================================================
-       BARRA RÁPIDA DE ACESSO ÀS ROLES (Funciona na mesma rota "/" sem 404)
-       ======================================================================== -->
-  <div id="spa-top-switcher" style="position: fixed; top: 14px; left: 50%; transform: translateX(-50%); z-index: 50;">
-    <div class="role-preview-bar">
-      <span class="role-preview-label">TELAS POR ROLE:</span>
-      <button type="button" class="role-preview-btn active" data-spa-action="voltar-login" id="btn-top-login">
-        Login
-      </button>
-      <button type="button" class="role-preview-btn" data-spa-role="1" id="btn-top-role-1">
-        Role Nível 1 (Relatórios)
-      </button>
-      <button type="button" class="role-preview-btn" data-spa-role="2" id="btn-top-role-2">
-        Role Nível 2 (Cofre)
-      </button>
-      <button type="button" class="role-preview-btn" data-spa-role="3" id="btn-top-role-3">
-        Role Nível 3 (Auditoria)
-      </button>
-    </div>
-  </div>
-
-  <!-- ========================================================================
        VISÃO 1 (SPA): LOGIN E RECONHECIMENTO FACIAL INICIAL
        ======================================================================== -->
   <main class="main-container" id="spa-view-login">
@@ -685,15 +664,6 @@
              NÍVEL 2 — ABA 1: COFRE SEGURO (Status) (#cofre-status)
              ================================================================ -->
         <section class="panel-main-card tab-screen" id="tab-cofre-status" data-tab-panel="cofre-status">
-          <div style="display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 8px;">
-            <button type="button" class="role-preview-btn active" id="btn-preview-cofre-locked">
-              Estado 1: Cofre Bloqueado
-            </button>
-            <button type="button" class="role-preview-btn" id="btn-preview-cofre-unlocked">
-              Estado 2: Cofre Desbloqueado (Pós-Facial)
-            </button>
-          </div>
-
           <div id="view-cofre-bloqueado">
             <div class="screen-header-block">
               <h2 class="screen-main-title">ACESSO NEGADO / REQUER AUTENTICAÇÃO</h2>
@@ -760,9 +730,76 @@
           </div>
 
           <div id="view-cofre-desbloqueado" style="display: none;">
-            <div class="screen-header-block">
-              <h2 class="screen-main-title">COFRE SEGURO - STATUS GERAL</h2>
-              <p class="screen-subtitle">AGORA LIBERADO APÓS A CONFIRMAÇÃO FACIAL</p>
+            <div class="screen-header-block" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+              <div>
+                <h2 class="screen-main-title">COFRE SEGURO - STATUS GERAL</h2>
+                <p class="screen-subtitle">AGORA LIBERADO APÓS A CONFIRMAÇÃO FACIAL</p>
+              </div>
+              <button type="button" class="btn-novo-usuario" id="btn-cofre-abrir-form-toxina" data-action="abrir-form-toxina">
+                <span>+ ADICIONAR TOXINA</span>
+              </button>
+            </div>
+
+            <!-- Formulário de Adição de Nova Toxina no Cofre (Exclusivo para Usuários Permitidos Nível 2/3 com Cofre Desbloqueado) -->
+            <div id="slot-form-toxina-cofre">
+              <div id="card-form-nova-toxina" class="cyber-inner-card" style="display: none; margin-bottom: 18px; border: 1px solid rgba(255, 42, 64, 0.45); background: rgba(14, 18, 28, 0.95); padding: 18px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 10px;">
+                  <div>
+                    <h3 style="margin: 0; font-size: 1rem; color: #ffffff; letter-spacing: 0.06em;">CADASTRAR NOVA TOXINA NO COFRE</h3>
+                    <span style="font-size: 0.75rem; color: #9aa4b8;">Salva no banco de dados e atualiza automaticamente os Dashboards do Nível 1 e Inventário</span>
+                  </div>
+                  <span class="unlocked-badge-top" style="margin: 0;">ACESSO AUTORIZADO (NÍVEL 2/3)</span>
+                </div>
+
+                <form id="form-nova-toxina-cofre">
+                  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px;">
+                    <div class="modal-field">
+                      <label for="tox-input-nome">Nome da Toxina</label>
+                      <input type="text" id="tox-input-nome" class="cyber-input-control" placeholder="Ex: Anatoxina-a Purificada" required />
+                    </div>
+                    <div class="modal-field">
+                      <label for="tox-input-codigo">Código da Amostra</label>
+                      <input type="text" id="tox-input-codigo" class="cyber-input-control" placeholder="Ex: TOX-L2-005" required />
+                    </div>
+                    <div class="modal-field">
+                      <label for="tox-input-formula">Fórmula Molecular</label>
+                      <input type="text" id="tox-input-formula" class="cyber-input-control" placeholder="Ex: C10H15NO" required />
+                    </div>
+                    <div class="modal-field">
+                      <label for="tox-select-nivel">Classificação de Risco / Nível</label>
+                      <select id="tox-select-nivel" class="cyber-select-control" required>
+                        <option value="1">Moderado (Monitoramento Nível 1)</option>
+                        <option value="2" selected>Alto / Crítico (Restrito Nível 2)</option>
+                        <option value="3">Catastrófico (Segurança Nível 3)</option>
+                      </select>
+                    </div>
+                    <div class="modal-field">
+                      <label for="tox-input-temp">Temperatura de Armazenamento (°C)</label>
+                      <input type="number" step="0.1" id="tox-input-temp" class="cyber-input-control" value="-20.0" required />
+                    </div>
+                    <div class="modal-field">
+                      <label for="tox-input-compartimento">Compartimento no Cofre</label>
+                      <input type="text" id="tox-input-compartimento" class="cyber-input-control" placeholder="Ex: Criogenia Setor 2-B" required />
+                    </div>
+                  </div>
+
+                  <div class="modal-field" style="margin-top: 10px;">
+                    <label for="tox-input-protocolo">Protocolo de Contenção / Neutralização</label>
+                    <input type="text" id="tox-input-protocolo" class="cyber-input-control" placeholder="Ex: Pressão negativa BSL e neutralização alcalina controlada" />
+                  </div>
+
+                  <div class="feedback-msg" id="tox-feedback-msg" style="margin-top: 10px;"></div>
+
+                  <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 14px;">
+                    <button type="button" class="btn-outline-secondary" id="btn-cancelar-toxina-cofre" style="width: auto; padding: 8px 18px;">
+                      CANCELAR
+                    </button>
+                    <button type="submit" class="btn-red-outline-large" id="btn-salvar-toxina-cofre" style="width: auto; padding: 8px 22px; margin-top: 0;">
+                      <span>SALVAR TOXINA NO COFRE</span>
+                    </button>
+                  </div>
+                </form>
+              </div>
             </div>
 
             <div class="cofre-unlocked-grid">
@@ -856,54 +893,83 @@
              NÍVEL 2 — ABA 2: INVENTÁRIO DE TOXINAS (#inventario)
              ================================================================ -->
         <section class="panel-main-card tab-screen" id="tab-inventario" data-tab-panel="inventario">
-          <div class="screen-header-block">
-            <h2 class="screen-main-title">INVENTÁRIO DE TOXINAS</h2>
-            <p class="screen-subtitle">(Cofre Seguro)</p>
+          <div class="screen-header-block" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+            <div>
+              <h2 class="screen-main-title">INVENTÁRIO DE TOXINAS</h2>
+              <p class="screen-subtitle">(Cofre Seguro)</p>
+            </div>
+            <button type="button" class="btn-novo-usuario" id="btn-inv-abrir-form-toxina" data-action="abrir-form-toxina">
+              <span>+ ADICIONAR TOXINA</span>
+            </button>
           </div>
 
-          <div class="inventory-toolbar">
-            <select id="sql-filtro-inventario" class="cyber-select-control">
-              <option value="">Filtros de Busca</option>
-              <option value="alto">Nível de Risco: Alto</option>
-              <option value="critico">Nível de Risco: Alto/Crítico</option>
-            </select>
+          <div id="view-inventario-bloqueado" style="display: none;">
+            <div class="cofre-locked-center-card" style="margin: 24px auto;">
+              <div class="vault-door-ring">
+                <div class="vault-lock-badge">
+                  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                  </svg>
+                </div>
+              </div>
+              <h3 class="cofre-locked-title">INVENTÁRIO DO COFRE BLOQUEADO</h3>
+              <p class="cofre-locked-desc">
+                Somente operadores autorizados (Nível 2 ou Nível 3) após a confirmação biométrica facial podem acessar o inventário do cofre ou cadastrar novas toxinas.
+              </p>
+              <button type="button" class="btn-red-outline-large" data-spa-tab="autenticacao-facial" style="max-width: 310px; margin: 14px auto 0;">
+                <span>LIBERAR ACESSO AO COFRE</span>
+              </button>
+            </div>
+          </div>
 
-            <div class="inv-metric-pill">
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/>
-              </svg>
-              <div class="inv-metric-text">
-                <span>Temperatura Interna</span>
-                <strong class="temp-green" id="sql-inv-temperatura">-- °C</strong>
+          <div id="view-inventario-desbloqueado">
+            <div id="slot-form-toxina-inventario"></div>
+
+            <div class="inventory-toolbar">
+              <select id="sql-filtro-inventario" class="cyber-select-control">
+                <option value="">Filtros de Busca</option>
+                <option value="alto">Nível de Risco: Alto</option>
+                <option value="critico">Nível de Risco: Alto/Crítico</option>
+              </select>
+
+              <div class="inv-metric-pill">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/>
+                </svg>
+                <div class="inv-metric-text">
+                  <span>Temperatura Interna</span>
+                  <strong class="temp-green" id="sql-inv-temperatura">-- °C</strong>
+                </div>
+              </div>
+
+              <div class="inv-metric-pill">
+                <div class="inv-metric-text">
+                  <span>Quantidade</span>
+                  <strong id="sql-inv-quantidade">0 Itens</strong>
+                </div>
               </div>
             </div>
 
-            <div class="inv-metric-pill">
-              <div class="inv-metric-text">
-                <span>Quantidade</span>
-                <strong id="sql-inv-quantidade">0 Itens</strong>
-              </div>
+            <div class="alerts-table-card">
+              <table class="flat-cyber-table" id="tabela-inventario-toxinas">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Nome da Toxina</th>
+                    <th>Quantidade</th>
+                    <th>Nível de Risco</th>
+                    <th>Compartimento</th>
+                    <th>Último Acesso</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-inventario-toxinas">
+                  <tr class="sql-empty-row">
+                    <td colspan="6">Sem dados — Pré-configurado para receber a tabela `toxinas` do banco de dados MySQL.</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
-          </div>
-
-          <div class="alerts-table-card">
-            <table class="flat-cyber-table" id="tabela-inventario-toxinas">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Nome da Toxina</th>
-                  <th>Quantidade</th>
-                  <th>Nível de Risco</th>
-                  <th>Compartimento</th>
-                  <th>Último Acesso</th>
-                </tr>
-              </thead>
-              <tbody id="tbody-inventario-toxinas">
-                <tr class="sql-empty-row">
-                  <td colspan="6">Sem dados — Pré-configurado para receber a tabela `toxinas` do banco de dados MySQL.</td>
-                </tr>
-              </tbody>
-            </table>
           </div>
         </section>
 
@@ -1189,47 +1255,78 @@
         <section class="panel-main-card tab-screen" id="tab-adicionar" data-tab-panel="adicionar">
           <div class="screen-header-block">
             <h2 class="screen-main-title">ADICIONAR NOVO OPERADOR</h2>
-            <p class="screen-subtitle">CADASTRO DE CREDENCIAIS E ROLE NO BANCO DE DADOS MYSQL</p>
+            <p class="screen-subtitle">CADASTRO DE DADOS PESSOAIS, CREDENCIAIS E BIOMETRIA FACIAL</p>
           </div>
 
-          <form id="form-novo-usuario-sql" class="pdf-form-col" style="max-width: 580px;" autocomplete="off">
-            <div>
-              <label class="pdf-field-label" for="sql-input-nome">Nome do Operador</label>
-              <input type="text" id="sql-input-nome" class="cyber-input-control" placeholder="Coluna MySQL: nome" required />
+          <div class="n2-facial-grid">
+            <form id="form-novo-usuario-sql" class="pdf-form-col" autocomplete="off">
+              <div>
+                <label class="pdf-field-label" for="sql-input-nome">Nome Completo do Operador</label>
+                <input type="text" id="sql-input-nome" class="cyber-input-control" placeholder="Ex: Carlos Mendes" required />
+              </div>
+
+              <div class="pdf-date-row">
+                <div>
+                  <label class="pdf-field-label" for="sql-input-cpf">CPF (11 dígitos)</label>
+                  <input type="text" id="sql-input-cpf" class="cyber-input-control" placeholder="000.000.000-00" maxlength="14" required />
+                </div>
+                <div>
+                  <label class="pdf-field-label" for="sql-input-matricula">Matrícula Funcional</label>
+                  <input type="text" id="sql-input-matricula" class="cyber-input-control" placeholder="Ex: MMA-2026-010" required />
+                </div>
+              </div>
+
+              <div class="pdf-date-row">
+                <div>
+                  <label class="pdf-field-label" for="sql-select-role">Nível de Acesso (Role RBAC)</label>
+                  <select id="sql-select-role" class="cyber-select-control" required>
+                    <option value="1">Nível 1 (Relatórios / Operacional)</option>
+                    <option value="2">Nível 2 (Cofre + Relatórios / Diretoria)</option>
+                    <option value="3">Nível 3 (Auditoria Completa / Ministerial)</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="pdf-field-label" for="sql-input-senha">Senha Inicial (mín. 8 caracteres)</label>
+                  <input type="password" id="sql-input-senha" class="cyber-input-control" placeholder="Mínimo 8 caracteres" minlength="8" required />
+                </div>
+              </div>
+
+              <div>
+                <label class="pdf-field-label" for="sql-input-foto-file">Ou Enviar Foto Facial de Referência (Arquivo JPEG/PNG)</label>
+                <input type="file" id="sql-input-foto-file" accept="image/jpeg,image/png" class="cyber-input-control" style="padding-top: 7px;" />
+              </div>
+
+              <div class="feedback-msg" id="modal-sql-feedback"></div>
+
+              <button type="submit" class="btn-red-outline-large" id="btn-submit-novo-usuario">
+                <span>CADASTRAR OPERADOR E FACIAL</span>
+              </button>
+            </form>
+
+            <!-- Scanner / Captura de Biometria Facial para o Cadastro -->
+            <div class="n2-controls-col">
+              <div class="n2-scanner-frame" id="cad-scanner-viewport" style="height: 240px;">
+                <div class="reticle-corner corner-tl"></div>
+                <div class="reticle-corner corner-tr"></div>
+                <div class="reticle-corner corner-bl"></div>
+                <div class="reticle-corner corner-br"></div>
+                <div class="n2-hud-top-label" id="cad-hud-status-text">BIOMETRIA FACIAL OBRIGATÓRIA</div>
+                <div class="scan-laser" id="cad-scan-laser"></div>
+                <canvas id="cad-face-mesh-canvas" width="340" height="220"></canvas>
+                <video id="cad-webcam-video" autoplay playsinline muted style="position:absolute;width:100%;height:100%;object-fit:cover;transform:scaleX(-1);z-index:1;display:none;"></video>
+                <div class="n2-hud-bottom-label" id="cad-hud-metrics-text">AGUARDANDO CAPTURA FACIAL</div>
+              </div>
+
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button type="button" class="btn-secondary" id="btn-cad-toggle-cam" style="margin-top: 0; flex: 1;">
+                  <span>ATIVAR CÂMERA</span>
+                </button>
+                <button type="button" class="btn-red-outline-large" id="btn-cad-capturar-face" style="flex: 1;">
+                  <span>CAPTURAR FACIAL</span>
+                </button>
+              </div>
             </div>
-
-            <div class="pdf-date-row">
-              <div>
-                <label class="pdf-field-label" for="sql-input-cpf">CPF</label>
-                <input type="text" id="sql-input-cpf" class="cyber-input-control" placeholder="Coluna MySQL: cpf" maxlength="14" required />
-              </div>
-              <div>
-                <label class="pdf-field-label" for="sql-input-matricula">Matrícula Funcional</label>
-                <input type="text" id="sql-input-matricula" class="cyber-input-control" placeholder="Coluna MySQL: matricula" required />
-              </div>
-            </div>
-
-            <div class="pdf-date-row">
-              <div>
-                <label class="pdf-field-label" for="sql-select-role">Nível de Acesso (Role)</label>
-                <select id="sql-select-role" class="cyber-select-control" required>
-                  <option value="1">Nível 1 (Relatórios)</option>
-                  <option value="2">Nível 2 (Cofre + Relatórios)</option>
-                  <option value="3">Nível 3 (Auditoria Completa)</option>
-                </select>
-              </div>
-              <div>
-                <label class="pdf-field-label" for="sql-input-senha">Senha Inicial</label>
-                <input type="password" id="sql-input-senha" class="cyber-input-control" placeholder="Coluna MySQL: senha_hash" required />
-              </div>
-            </div>
-
-            <div class="feedback-msg" id="modal-sql-feedback"></div>
-
-            <button type="submit" class="btn-red-outline-large">
-              <span>CADASTRAR OPERADOR (AGUARDANDO MYSQL)</span>
-            </button>
-          </form>
+          </div>
         </section>
 
         <!-- ================================================================
@@ -1240,6 +1337,21 @@
             <h2 class="screen-main-title">DESBLOQUEAR CONTA</h2>
             <p class="screen-subtitle">LIBERAÇÃO DE TERMINAIS E OPERADORES BLOQUEADOS POR TENTATIVAS EXCEDIDAS</p>
           </div>
+
+          <form id="form-desbloquear-manual" class="inventory-toolbar" style="grid-template-columns: 1fr auto; margin-bottom: 16px;" autocomplete="off">
+            <input
+              type="text"
+              id="sql-input-desbloqueio-id"
+              class="cyber-input-control"
+              placeholder="Digite o CPF (ex: 123.456.789-00) ou Matrícula para desbloquear..."
+              required
+            />
+            <button type="submit" class="btn-red-outline-large" id="btn-desbloquear-direto" style="width: auto; padding: 0 24px; height: 40px;">
+              <span>DESBLOQUEAR CONTA</span>
+            </button>
+          </form>
+
+          <div class="feedback-msg" id="desbloqueio-feedback" style="margin-bottom: 12px;"></div>
 
           <div class="alerts-table-card">
             <table class="flat-cyber-table" id="tabela-contas-bloqueadas">
@@ -1255,7 +1367,7 @@
               </thead>
               <tbody id="tbody-contas-bloqueadas">
                 <tr class="sql-empty-row">
-                  <td colspan="6">Sem dados — Pré-configurado para receber `SELECT * FROM usuarios WHERE bloqueado = 1` do MySQL.</td>
+                  <td colspan="6">Nenhuma conta bloqueada no momento.</td>
                 </tr>
               </tbody>
             </table>

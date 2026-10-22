@@ -1,44 +1,47 @@
-# Documentação Resumida de Atualização — Frontend F.A.C.A (`frontend-aps`)
+# Documentação Resumida de Atualização — F.A.C.A. (Frontend & Banco de Dados Integrados)
 
-Este diretório (`frontend-aps/`) contém **exclusivamente os arquivos de Front-End** criados e atualizados para o sistema **F.A.C.A — Frente de Autenticação e Controle de Acesso**, sem modificar nenhum arquivo Python (`main.py`, `biometria.py`, `schemas.py`).
-
----
-
-## 1. Solução do Erro `{"detail":"Not Found"}` no FastAPI (`http://localhost:8000`)
-
-### Causa
-O servidor Python (`main.py`) serve apenas a rota raiz `/` (`index.html`) e os arquivos estáticos em `/src/*`. Quando o navegador tentava abrir `/nivel1.html`, `/nivel2.html` ou `/nivel3.html`, o FastAPI retornava `{"detail":"Not Found"}` por não existir rota para esses arquivos no `main.py`.
-
-### Solução Implementada (100% no Front-End, sem tocar no Python)
-O arquivo [`index.html`](file:///c:/Users/cruzj/Downloads/aps-6semestre-dev/aps-6semestre-dev/frontend-aps/index.html) foi transformado em uma **Single Page Application (SPA)** completa:
-- **`#spa-view-login`**: Contém a Etapa 1 (CPF/Senha) e Etapa 2 (Biometria Facial via Python `POST /autenticar`).
-- **`#spa-view-dashboard`**: Contém o Menu Lateral Cumulativo por Role (`Nível 1`, `Nível 2`, `Nível 3`) e todas as **10 telas de abas** (`.tab-screen`) na própria rota `http://localhost:8000/`.
-- **`#spa-top-switcher`**: Barra superior rápida para alternar entre **Tela de Login**, **Role Nível 1**, **Role Nível 2** e **Role Nível 3** instantaneamente sem recarregar a página ou gerar erro 404.
+Este documento registra o estado consolidado do sistema **F.A.C.A — Frente de Autenticação e Controle de Acesso**, com todos os botões, telas e formulários do Front-End (`/` e `frontend-aps/`) conectados ao Banco de Dados Relacional **MySQL 8.0 (`aps_biometria`)** via FastAPI Python, sem alterar os arquivos do backend.
 
 ---
 
-## 2. Estrutura de Arquivos em `frontend-aps/`
+## 1. Conexão Completa dos Botões do Frontend ao Banco de Dados MySQL
 
-- [`index.html`](file:///c:/Users/cruzj/Downloads/aps-6semestre-dev/aps-6semestre-dev/frontend-aps/index.html) — Aplicação unificada (Login + Painéis Nível 1, 2 e 3 + todas as 10 abas) funcionando diretamente em `http://localhost:8000/`.
-- [`nivel1.html`](file:///c:/Users/cruzj/Downloads/aps-6semestre-dev/aps-6semestre-dev/frontend-aps/nivel1.html), [`nivel2.html`](file:///c:/Users/cruzj/Downloads/aps-6semestre-dev/aps-6semestre-dev/frontend-aps/nivel2.html), [`nivel3.html`](file:///c:/Users/cruzj/Downloads/aps-6semestre-dev/aps-6semestre-dev/frontend-aps/nivel3.html) — Telas standalone caso queira servir via Live Server/Nginx.
-- [`src/css/components/painel-nivel3.css`](file:///c:/Users/cruzj/Downloads/aps-6semestre-dev/aps-6semestre-dev/frontend-aps/src/css/components/painel-nivel3.css) — Estilização completa das 10 abas, tabelas vazias pré-configuradas, Cofre Seguro, Biometria Nível 2 e modais.
-- [`src/js/components/menu-niveis.js`](file:///c:/Users/cruzj/Downloads/aps-6semestre-dev/aps-6semestre-dev/frontend-aps/src/js/components/menu-niveis.js) — Renderizador do menu cumulativo:
-  - **Role Nível 1**: *Estatísticas, Documentos Públicos, Perfil Básico*.
-  - **Role Nível 2**: *Menu Nível 1 + Cofre Seguro (Status), Autenticação Facial, Relatórios Setoriais*.
-  - **Role Nível 3**: *Menu Nível 1 + Menu Nível 2 + Histórico de Acesso, Gerador de PDF, Gestão de Usuários, Configurações*.
-- [`src/js/painel-nivel3.js`](file:///c:/Users/cruzj/Downloads/aps-6semestre-dev/aps-6semestre-dev/frontend-aps/src/js/painel-nivel3.js) — Controlador SPA de abas, Roles e integração da aba **Autenticação Facial (Nível 2)** usando o mesmo endpoint Python `POST /autenticar` e `FaceScanner`.
-- [`src/js/scanner-facial.js`](file:///c:/Users/cruzj/Downloads/aps-6semestre-dev/aps-6semestre-dev/frontend-aps/src/js/scanner-facial.js) — Atualizado para suportar múltiplas instâncias de HUD (`face-mesh-canvas` no Login e `n2-face-mesh-canvas` no Nível 2).
-- [`src/js/config/configuracao-banco.js`](file:///c:/Users/cruzj/Downloads/aps-6semestre-dev/aps-6semestre-dev/frontend-aps/src/js/config/configuracao-banco.js) — Contrato de tabelas, colunas e queries SQL comentadas para quando o MySQL/Docker for conectado.
-- [`src/js/services/servico-api.js`](file:///c:/Users/cruzj/Downloads/aps-6semestre-dev/aps-6semestre-dev/frontend-aps/src/js/services/servico-api.js) — Funções `fetch` comentadas prontas para popular os IDs HTML assim que o banco MySQL estiver ativo.
+1. **Login e Controle de Acesso (`src/js/principal.js` + `src/js/services/servico-api.js`)**:
+   - **Usuário Administrador Geral (Equipe de T.I.)**:
+     - Credenciais: **CPF** `000.000.000-00` (ou Matrícula `MMA-TI-000`) | **Senha** `AdmTI@2026` (ou `Faca@2026`).
+     - Entra diretamente no painel de **Nível 3** sem precisar passar pelo reconhecimento facial.
+   - **Demais Usuários (Operadores Nível 1, 2 e 3)**:
+     - Exigem cadastro prévio no banco de dados com dados pessoais e biometria facial 128D registrada.
+     - O botão **`INICIAR RECONHECIMENTO`** (`#btn-start-scan`) captura o frame da webcam em Base64 e valida via `POST /autenticar` contra as tabelas `usuario`, `biometria`, `tentativa_autenticacao` e `bloqueio_login`.
+     - Caso o usuário não esteja cadastrado ou a face não seja reconhecida, o acesso é negado (`HTTP 401`) com mensagem explícita, bloqueando a conta por 15 minutos após 5 tentativas falhas (`HTTP 403`).
+
+2. **Controle de Navegação e Proteção de Rotas (`src/js/painel-nivel3.js` + `src/js/components/menu-niveis.js`)**:
+   - Removidas todas as barras de pré-visualização antes do login (`#spa-top-switcher`, `#role-preview-switcher` e alternadores manuais do cofre).
+   - Proteção de rotas ativa (`validarAcessoRota` / `protegerRotaAtual`): qualquer tentativa de acessar `nivel1.html`, `nivel2.html`, `nivel3.html`, `?role=X` ou `#aba` diretamente pela URL sem estar autenticado redireciona imediatamente para a tela de login.
+   - O menu lateral cumulativo exibe apenas os níveis permitidos para o usuário logado e possui o botão **`ENCERRAR SESSÃO (Sair)`** (`#btn-sidebar-logout`).
+
+3. **Operações Conectadas nas Abas de Nível 1, Nível 2 e Nível 3 (`src/js/painel-nivel3.js`)**:
+   - **Nível 1 (`#tab-estatisticas`, `#tab-panorama`, `#tab-alertas`, `#tab-pdf`)**: consome `GET /toxinas` e `GET /ping` para popular KPIs (`Total de Amostras`, `Média Amostras`, etc.), gráficos, mapa de calor com botões de zoom (`+`/`−`), barras de toxinas com nomes dinâmicos, tabela de alertas e o botão **`GERAR RELATÓRIO PDF`** (`#btn-gerar-pdf`).
+   - **Nível 2 (`#tab-cofre-status`, `#tab-inventario`, `#tab-autenticacao-facial`)**:
+     - **Acesso Restrito ao Cofre**: somente operadores autorizados (**Nível 2** ou **Nível 3**) e após a liberação biométrica facial no botão **`INICIAR ESCANEAMENTO`** (`#btn-n2-start-scan` ➔ `POST /autenticar`, ou bypass do ADM Geral T.I.) podem visualizar o interior do Cofre e o Inventário de Toxinas. Operadores de Nível 1 são bloqueados.
+     - **Botão `+ ADICIONAR TOXINA` dentro do Cofre (`#btn-cofre-abrir-form-toxina` e `#btn-inv-abrir-form-toxina`)**: permite que usuários autorizados cadastrem novas toxinas no cofre (`#form-nova-toxina-cofre` / **`SALVAR TOXINA NO COFRE`**), salvando no banco/persistência e **atualizando imediatamente todos os dashboards do Nível 1** (`Síntese de Estatísticas`, `Panorama de Toxinas`, `Histórico de Alertas` e `Gerador PDF`), além do Inventário Nível 2 e widgets do Nível 3.
+   - **Nível 3 (`#tab-historico`, `#tab-adicionar`, `#tab-desbloquear`)**:
+     - Aba **Adicionar Operador**: botões **`ATIVAR CÂMERA`**, **`CAPTURAR FACIAL`**, upload de imagem e **`CADASTRAR OPERADOR E FACIAL`** (`#btn-submit-novo-usuario`) conectados a `POST /cadastrar`.
+     - Aba **Desbloquear Conta**: botão **`DESBLOQUEAR CONTA`** (`#btn-desbloquear-direto`) e botões **`DESBLOQUEAR / UNBLOCK`** nas tabelas conectados a `POST /usuarios/{identificador}/desbloquear`.
 
 ---
 
-## 3. O Que Atualizar Quando o Banco MySQL + Docker Estiver Pronto
+## 2. Problema Identificado no Banco de Dados (Docker) e Solução Aplicada
 
-1. **No Backend Python (`main.py`)**:
-   - Criar as rotas REST que consultam o MySQL conforme documentado em [`src/js/config/configuracao-banco.js`](file:///c:/Users/cruzj/Downloads/aps-6semestre-dev/aps-6semestre-dev/frontend-aps/src/js/config/configuracao-banco.js):
-     - `GET /api/v1/nivel1/estatisticas` e `GET /api/v1/nivel1/documentos-publicos`
-     - `GET /api/v1/nivel2/cofre/status`, `GET /api/v1/nivel2/cofre/arquivos` e `GET /api/v1/nivel2/relatorios-setoriais`
-     - `GET /api/v1/nivel3/historico-acessos`, `GET /api/v1/nivel3/usuarios`, `POST /api/v1/nivel3/usuarios` e `PUT /api/v1/nivel3/configuracoes`
-2. **No Front-End (`src/js/services/servico-api.js` e `src/js/painel-nivel3.js`)**:
-   - Descomentar os blocos marcados com `=== [DESCOMENTAR QUANDO O BANCO DE DADOS MYSQL ESTIVER CONECTADO] ===`.
+- **Problema Ocorrido:**
+  1. Ao tentar cadastrar ou desbloquear um usuário com o banco sem privilégios inicializados, o backend retornava `500 Internal Server Error` em texto puro, o que gerava no navegador `Unexpected token 'I', "Internal S"... is not valid JSON`.
+  2. Nos logs do contêiner `faca_backend_api`, foi identificado `OperationalError: (1044, "Access denied for user 'faca_user'@'%' to database 'aps_biometria'")` porque o volume do MySQL havia subido antes da criação e liberação de permissões do schema `aps_biometria`.
+- **Solução Aplicada (Sem mexer no Backend Python):**
+  1. Adicionado `lerRespostaJsonSegura()` em `src/js/services/servico-api.js` para tratar respostas HTTP não-JSON sem quebrar a interface.
+  2. Adicionado `GRANT ALL PRIVILEGES ON aps_biometria.* TO 'faca_user'@'%'; FLUSH PRIVILEGES;` em `database/01_schema_base.sql` e importados os scripts `01_schema_base.sql` e `02_seed_operadores_e_cofre.sql` diretamente no contêiner `faca_mysql_db` com charset `utf8mb4`.
+
+---
+
+## 3. Sincronização com a Pasta `frontend-aps/`
+
+Todos os arquivos HTML, CSS, JavaScript, scripts do Banco de Dados (`database/01_schema_base.sql` e `database/02_seed_operadores_e_cofre.sql`) e documentações (`ROADMAP.md`, `RESUMO_ATUALIZACAO.md` e `docs/RELATORIO_FRONTEND.md`) estão sincronizados tanto na raiz do projeto quanto dentro do diretório `frontend-aps/`.
