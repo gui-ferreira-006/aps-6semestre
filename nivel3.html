@@ -71,9 +71,6 @@
     </div>
   </div>
 
-  <!-- Barra de Pré-visualização Rápida das 3 Roles -->
-  <div id="role-preview-switcher"></div>
-
   <!-- Cabeçalho Central F.A.C.A -->
   <header class="dashboard-top-header">
     <div class="logo-wrapper">
@@ -327,61 +324,87 @@
 
       <!-- ==================================================================
            ABA 2: ADICIONAR (+ NOVO USUÁRIO) (#adicionar)
-           Pré-configurada para INSERT INTO usuarios no MySQL
+           Conectada a POST /cadastrar
            ================================================================== -->
       <section class="panel-main-card tab-screen" id="tab-adicionar" data-tab-panel="adicionar">
         <div class="screen-header-block">
           <h2 class="screen-main-title">ADICIONAR NOVO OPERADOR</h2>
-          <p class="screen-subtitle">CADASTRO DE CREDENCIAIS E ROLE NO BANCO DE DADOS MYSQL</p>
+          <p class="screen-subtitle">CADASTRO DE DADOS PESSOAIS, CREDENCIAIS E BIOMETRIA FACIAL</p>
         </div>
 
-        <!--
-          [PONTO DE ENTRADA MYSQL - ADICIONAR USUÁRIO]
-          Query: INSERT INTO usuarios (nome, cpf, matricula, nivel_acesso, senha_hash) VALUES (?, ?, ?, ?, ?);
-        -->
-        <form id="form-novo-usuario-sql" class="pdf-form-col" style="max-width: 580px;" autocomplete="off">
-          <div>
-            <label class="pdf-field-label" for="sql-input-nome">Nome do Operador</label>
-            <input type="text" id="sql-input-nome" class="cyber-input-control" placeholder="Coluna MySQL: nome" required />
+        <div class="n2-facial-grid">
+          <form id="form-novo-usuario-sql" class="pdf-form-col" autocomplete="off">
+            <div>
+              <label class="pdf-field-label" for="sql-input-nome">Nome Completo do Operador</label>
+              <input type="text" id="sql-input-nome" class="cyber-input-control" placeholder="Ex: Carlos Mendes" required />
+            </div>
+
+            <div class="pdf-date-row">
+              <div>
+                <label class="pdf-field-label" for="sql-input-cpf">CPF (11 dígitos)</label>
+                <input type="text" id="sql-input-cpf" class="cyber-input-control" placeholder="000.000.000-00" maxlength="14" required />
+              </div>
+              <div>
+                <label class="pdf-field-label" for="sql-input-matricula">Matrícula Funcional</label>
+                <input type="text" id="sql-input-matricula" class="cyber-input-control" placeholder="Ex: MMA-2026-010" required />
+              </div>
+            </div>
+
+            <div class="pdf-date-row">
+              <div>
+                <label class="pdf-field-label" for="sql-select-role">Nível de Acesso (Role RBAC)</label>
+                <select id="sql-select-role" class="cyber-select-control" required>
+                  <option value="1">Nível 1 (Relatórios / Operacional)</option>
+                  <option value="2">Nível 2 (Cofre + Relatórios / Diretoria)</option>
+                  <option value="3">Nível 3 (Auditoria Completa / Ministerial)</option>
+                </select>
+              </div>
+              <div>
+                <label class="pdf-field-label" for="sql-input-senha">Senha Inicial (mín. 8 caracteres)</label>
+                <input type="password" id="sql-input-senha" class="cyber-input-control" placeholder="Mínimo 8 caracteres" minlength="8" required />
+              </div>
+            </div>
+
+            <div>
+              <label class="pdf-field-label" for="sql-input-foto-file">Ou Enviar Foto Facial de Referência (Arquivo JPEG/PNG)</label>
+              <input type="file" id="sql-input-foto-file" accept="image/jpeg,image/png" class="cyber-input-control" style="padding-top: 7px;" />
+            </div>
+
+            <div class="feedback-msg" id="modal-sql-feedback"></div>
+
+            <button type="submit" class="btn-red-outline-large" id="btn-submit-novo-usuario">
+              <span>CADASTRAR OPERADOR E FACIAL</span>
+            </button>
+          </form>
+
+          <div class="n2-controls-col">
+            <div class="n2-scanner-frame" id="cad-scanner-viewport" style="height: 240px;">
+              <div class="reticle-corner corner-tl"></div>
+              <div class="reticle-corner corner-tr"></div>
+              <div class="reticle-corner corner-bl"></div>
+              <div class="reticle-corner corner-br"></div>
+              <div class="n2-hud-top-label" id="cad-hud-status-text">BIOMETRIA FACIAL OBRIGATÓRIA</div>
+              <div class="scan-laser" id="cad-scan-laser"></div>
+              <canvas id="cad-face-mesh-canvas" width="340" height="220"></canvas>
+              <video id="cad-webcam-video" autoplay playsinline muted style="position:absolute;width:100%;height:100%;object-fit:cover;transform:scaleX(-1);z-index:1;display:none;"></video>
+              <div class="n2-hud-bottom-label" id="cad-hud-metrics-text">AGUARDANDO CAPTURA FACIAL</div>
+            </div>
+
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button type="button" class="btn-secondary" id="btn-cad-toggle-cam" style="margin-top: 0; flex: 1;">
+                <span>ATIVAR CÂMERA</span>
+              </button>
+              <button type="button" class="btn-red-outline-large" id="btn-cad-capturar-face" style="flex: 1;">
+                <span>CAPTURAR FACIAL</span>
+              </button>
+            </div>
           </div>
-
-          <div class="pdf-date-row">
-            <div>
-              <label class="pdf-field-label" for="sql-input-cpf">CPF</label>
-              <input type="text" id="sql-input-cpf" class="cyber-input-control" placeholder="Coluna MySQL: cpf" maxlength="14" required />
-            </div>
-            <div>
-              <label class="pdf-field-label" for="sql-input-matricula">Matrícula Funcional</label>
-              <input type="text" id="sql-input-matricula" class="cyber-input-control" placeholder="Coluna MySQL: matricula" required />
-            </div>
-          </div>
-
-          <div class="pdf-date-row">
-            <div>
-              <label class="pdf-field-label" for="sql-select-role">Nível de Acesso (Role)</label>
-              <select id="sql-select-role" class="cyber-select-control" required>
-                <option value="1">Nível 1 (Relatórios)</option>
-                <option value="2">Nível 2 (Cofre + Relatórios)</option>
-                <option value="3">Nível 3 (Auditoria Completa)</option>
-              </select>
-            </div>
-            <div>
-              <label class="pdf-field-label" for="sql-input-senha">Senha Inicial</label>
-              <input type="password" id="sql-input-senha" class="cyber-input-control" placeholder="Coluna MySQL: senha_hash" required />
-            </div>
-          </div>
-
-          <div class="feedback-msg" id="modal-sql-feedback"></div>
-
-          <button type="submit" class="btn-red-outline-large">
-            <span>CADASTRAR OPERADOR (AGUARDANDO MYSQL)</span>
-          </button>
-        </form>
+        </div>
       </section>
 
       <!-- ==================================================================
            ABA 3: DESBLOQUEAR CONTA (#desbloquear)
-           Pré-configurada para UPDATE usuarios SET bloqueado = 0 no MySQL
+           Conectada a POST /usuarios/{id}/desbloquear
            ================================================================== -->
       <section class="panel-main-card tab-screen" id="tab-desbloquear" data-tab-panel="desbloquear">
         <div class="screen-header-block">
@@ -389,11 +412,21 @@
           <p class="screen-subtitle">LIBERAÇÃO DE TERMINAIS E OPERADORES BLOQUEADOS POR TENTATIVAS EXCEDIDAS</p>
         </div>
 
-        <!--
-          [PONTO DE ENTRADA MYSQL - DESBLOQUEAR CONTA]
-          Query Listagem: SELECT id, nome, cpf, tentativas_falhas, bloqueado_ate FROM usuarios WHERE bloqueado = 1;
-          Query Ação UNBLOCK: UPDATE usuarios SET bloqueado = 0, tentativas_falhas = 0 WHERE id = ?;
-        -->
+        <form id="form-desbloquear-manual" class="inventory-toolbar" style="grid-template-columns: 1fr auto; margin-bottom: 16px;" autocomplete="off">
+          <input
+            type="text"
+            id="sql-input-desbloqueio-id"
+            class="cyber-input-control"
+            placeholder="Digite o CPF (ex: 123.456.789-00) ou Matrícula para desbloquear..."
+            required
+          />
+          <button type="submit" class="btn-red-outline-large" id="btn-desbloquear-direto" style="width: auto; padding: 0 24px; height: 40px;">
+            <span>DESBLOQUEAR CONTA</span>
+          </button>
+        </form>
+
+        <div class="feedback-msg" id="desbloqueio-feedback" style="margin-bottom: 12px;"></div>
+
         <div class="alerts-table-card">
           <table class="flat-cyber-table" id="tabela-contas-bloqueadas">
             <thead>
@@ -408,7 +441,7 @@
             </thead>
             <tbody id="tbody-contas-bloqueadas">
               <tr class="sql-empty-row">
-                <td colspan="6">Sem dados — Pré-configurado para receber `SELECT * FROM usuarios WHERE bloqueado = 1` do MySQL.</td>
+                <td colspan="6">Nenhuma conta bloqueada no momento.</td>
               </tr>
             </tbody>
           </table>
@@ -422,6 +455,7 @@
   <script src="src/js/config/configuracao-banco.js"></script>
   <script src="src/js/services/servico-api.js"></script>
   <script src="src/js/particulas.js"></script>
+  <script src="src/js/scanner-facial.js"></script>
   <script src="src/js/components/menu-niveis.js"></script>
   <script src="src/js/painel-nivel3.js"></script>
 </body>

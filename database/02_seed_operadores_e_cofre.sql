@@ -56,6 +56,17 @@ INSERT INTO usuario (
     3, -- Nível 3 (Ministro)
     2, -- Documentacao
     'ATIVA'
+),
+(
+    4,
+    'MMA-TI-000',
+    '00000000000',
+    'Administrador Geral (T.I.)',
+    'pbkdf2_sha256$100000$facasalt20260000$61d3cafb71ca4a91bd52a791646d48172da5f4fcc547aec5062b68da49efc321',
+    1, -- Administrador
+    3, -- Nível 3 (Acesso Total / T.I.)
+    2, -- Documentacao / Governança
+    'ATIVA'
 );
 
 -- ------------------------------------------------------------------------------

@@ -4,13 +4,14 @@
  * Arquivo: src/js/components/menu-niveis.js
  * Descrição: Renderizador do Menu Lateral Cumulativo por Role (Nível 1, 2 e 3)
  *            Operando em modo SPA (Single Page Application) na rota raiz (/)
- *            para evitar erros 404 Not Found no FastAPI sem alterar o Python.
+ *            com controle estrito de autenticação (sem botões de pré-visualização
+ *            ou troca livre de nível sem login validado).
  * ============================================================================
  *
- * REGRA DE VISIBILIDADE DO MENU POR ROLE:
- * - Role Nível 1: Exibe SOMENTE a seção "NÍVEL 1 (Relatórios)" + "ACESSO (Login)"
- * - Role Nível 2: Exibe "NÍVEL 1 (Relatórios)" + "NÍVEL 2 (Cofre)" + "ACESSO (Login)"
- * - Role Nível 3: Exibe TODO o menu ("NÍVEL 1" + "NÍVEL 2" + "NÍVEL 3 (Auditoria)") + "ACESSO (Login)"
+ * REGRA DE VISIBILIDADE DO MENU POR ROLE AUTENTICADA:
+ * - Role Nível 1: Exibe SOMENTE a seção "NÍVEL 1 (Relatórios)" + "SAIR (Logout)"
+ * - Role Nível 2: Exibe "NÍVEL 1 (Relatórios)" + "NÍVEL 2 (Cofre)" + "SAIR (Logout)"
+ * - Role Nível 3: Exibe TODO o menu ("NÍVEL 1" + "NÍVEL 2" + "NÍVEL 3 (Auditoria)") + "SAIR (Logout)"
  */
 
 (function () {
@@ -27,14 +28,16 @@
     desbloquear: 3
   };
 
-  function obterRoleAtual(fallback = 3) {
+  function obterRoleAtual(fallback = 1) {
+    if (window.ServicoAPI && window.ServicoAPI.estaAutenticado()) {
+      const nivelLogado = window.ServicoAPI.obterNivelAcessoLogado();
+      if ([1, 2, 3].includes(nivelLogado)) {
+        return nivelLogado;
+      }
+    }
     const salvo = Number(sessionStorage.getItem('faca_role_nivel'));
     if (salvo === 1 || salvo === 2 || salvo === 3) {
       return salvo;
-    }
-    const bodyRole = Number(document.body.getAttribute('data-role-nivel'));
-    if (bodyRole === 1 || bodyRole === 2 || bodyRole === 3) {
-      return bodyRole;
     }
     return fallback;
   }
@@ -51,7 +54,17 @@
     const container = document.getElementById(opcoes.containerId || 'sidebar-menu-container');
     if (!container) return;
 
-    const roleNivel = Number(opcoes.roleNivel) || obterRoleAtual(3);
+    // Não renderiza o menu caso o usuário não esteja autenticado
+    if (window.ServicoAPI && !window.ServicoAPI.estaAutenticado()) {
+      container.innerHTML = '';
+      return;
+    }
+
+    const roleNivel = Number(opcoes.roleNivel) || obterRoleAtual(1);
+    const usuarioLogado = window.ServicoAPI ? window.ServicoAPI.obterUsuarioLogado() : null;
+    const nomeOperador = usuarioLogado?.nome || 'Operador Autenticado';
+    const cargoOperador = usuarioLogado?.cargo || `Nível ${roleNivel}`;
+
     const itemAtivo = opcoes.itemAtivo || (roleNivel === 3 ? 'historico' : roleNivel === 2 ? 'cofre-status' : 'estatisticas');
     const nivelDaAbaAtiva = ABAS_POR_NIVEL[itemAtivo] || roleNivel;
 
@@ -270,7 +283,7 @@
           </div>
           <div class="sidebar-brand-titles">
             <span class="sidebar-faca-title">F.A.C.A</span>
-            <span class="sidebar-faca-sub">MINISTÉRIO DO MEIO AMBIENTE</span>
+            <span class="sidebar-faca-sub">${nomeOperador} (${cargoOperador})</span>
           </div>
         </div>
 
@@ -285,40 +298,19 @@
         <div class="menu-sep"></div>
 
         <div class="sidebar-footer-access">
-          <a href="#login" data-spa-action="voltar-login" class="menu-access-link">
+          <a href="#logout" data-spa-action="voltar-login" class="menu-access-link" id="btn-sidebar-logout">
             <span class="access-icon">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16 17 21 12 16 7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
               </svg>
             </span>
-            <span><strong>ACESSO</strong> <small>(Login)</small></span>
+            <span><strong>ENCERRAR SESSÃO</strong> <small>(Sair)</small></span>
           </a>
         </div>
       </aside>
     `;
-
-    // Barra superior de pré-visualização das Roles (funciona via SPA sem recarregar rota!)
-    const switcherEl = document.getElementById('role-preview-switcher');
-    if (switcherEl) {
-      switcherEl.innerHTML = `
-        <div class="role-preview-bar">
-          <span class="role-preview-label">VISUALIZAR POR ROLE:</span>
-          <button type="button" data-spa-role="1" class="role-preview-btn ${roleNivel === 1 ? 'active' : ''}">
-            Role Nível 1 (Só Nível 1)
-          </button>
-          <button type="button" data-spa-role="2" class="role-preview-btn ${roleNivel === 2 ? 'active' : ''}">
-            Role Nível 2 (Nível 1 + 2)
-          </button>
-          <button type="button" data-spa-role="3" class="role-preview-btn ${roleNivel === 3 ? 'active' : ''}">
-            Role Nível 3 (Menu Completo)
-          </button>
-          <button type="button" data-spa-action="voltar-login" class="role-preview-btn">
-            Tela de Login
-          </button>
-        </div>
-      `;
-    }
   }
 
   window.MenuNiveis = {
