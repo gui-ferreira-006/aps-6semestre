@@ -393,7 +393,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return `
           <circle cx="${pt.x}" cy="${pt.y}" r="${pt.r}" fill="${cor}" opacity="0.28"/>
           <circle cx="${pt.x}" cy="${pt.y}" r="6" fill="${cor}"/>
-          <text x="${pt.x + 10}" y="${pt.y + 4}" fill="#ffffff" font-size="10" font-family="Share Tech Mono, monospace">${item.codigo_amostra}</text>
+          <text x="${pt.x + 10}" y="${pt.y + 4}" fill="#ffffff" font-size="10" font-family="Host Grotesk, sans-serif">${item.codigo_amostra}</text>
         `;
       }).join('');
     }

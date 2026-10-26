@@ -3,6 +3,24 @@
    Ministério do Meio Ambiente - Cyber Security Biometrics UI
    ========================================================================== */
 
+@font-face {
+  font-family: 'Host Grotesk';
+  src: url('../assets/fonts/HostGrotesk-VariableFont_wght.ttf') format('truetype'),
+       url('../../fonts/HostGrotesk-VariableFont_wght.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Host Grotesk';
+  src: url('../assets/fonts/HostGrotesk-Italic-VariableFont_wght.ttf') format('truetype'),
+       url('../../fonts/HostGrotesk-Italic-VariableFont_wght.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
+}
+
 :root {
   --bg-dark: #070709;
   --card-bg: rgba(14, 15, 20, 0.88);
@@ -23,15 +41,16 @@
   --input-border: #22242e;
   --input-border-focus: #b80f1e;
   
-  --font-display: 'Orbitron', sans-serif;
-  --font-ui: 'Rajdhani', sans-serif;
-  --font-mono: 'Share Tech Mono', monospace;
+  --font-display: 'Host Grotesk', sans-serif;
+  --font-ui: 'Host Grotesk', sans-serif;
+  --font-mono: 'Host Grotesk', monospace;
 }
 
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  font-family: var(--font-ui);
 }
 
 body {
