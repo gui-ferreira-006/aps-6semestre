@@ -872,10 +872,14 @@ document.addEventListener('DOMContentLoaded', () => {
       btnN2ToggleCam.textContent = active ? 'Usar Malha Holográfica' : 'Ativar Câmera Real';
 
       if (active) {
-        showFeedback(n2BioFeedback, 'Câmera ativada. Posicione seu rosto no centro do enquadramento.', 'info');
+        showFeedback(
+          n2BioFeedback,
+          '⚠️ Câmera ativada. Aproxime seu rosto e mantenha-o dentro da REGIÃO OVAL para o sistema validar melhor e liberar o acesso.',
+          'info'
+        );
       } else {
         scannerNivel2.resetState();
-        showFeedback(n2BioFeedback, 'Modo holográfico ativo. Ative a câmera real para validação das 5 fases.', 'info');
+        showFeedback(n2BioFeedback, 'Modo holográfico ativo. Ative a câmera real e aproxime o rosto na região oval para validação.', 'info');
       }
     });
   }
@@ -911,7 +915,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!scannerNivel2.isCameraActive) {
         showFeedback(
           n2BioFeedback,
-          '⚠️ A câmera real não está ativa! Clique em "Ativar Câmera Real" abaixo para permitir a captura facial.',
+          '⚠️ A câmera real não está ativa! Clique em "Ativar Câmera Real" abaixo, aproxime seu rosto na região oval e inicie o escaneamento.',
           'error'
         );
         return;
@@ -926,15 +930,24 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
+      if (typeof scannerNivel2.validarPresencaNaRegiaoOval === 'function') {
+        const checagemOval = scannerNivel2.validarPresencaNaRegiaoOval();
+        if (!checagemOval.ok) {
+          scannerNivel2.setErrorState('ENQUADRE NA OVAL', 'APROXIME O ROSTO');
+          showFeedback(n2BioFeedback, `⚠️ ${checagemOval.motivo}`, 'info');
+          return;
+        }
+      }
+
       btnN2StartScan.disabled = true;
-      if (btnN2ScanLabel) btnN2ScanLabel.textContent = 'VALIDANDO BIOMETRIA...';
+      if (btnN2ScanLabel) btnN2ScanLabel.textContent = 'VALIDANDO ROSTO NA OVAL...';
       clearFeedback(n2BioFeedback);
-      scannerNivel2.setScanningState(true, 'ANALISANDO TRAÇOS FACIAIS...');
+      scannerNivel2.setScanningState(true, 'ANALISANDO ROSTO NA REGIÃO OVAL...');
 
       const frameBase64 = scannerNivel2.captureFrameBase64();
       if (!frameBase64) {
         scannerNivel2.setErrorState('ERRO DE CAPTURA', 'FRAME NULO');
-        showFeedback(n2BioFeedback, 'Não foi possível capturar o quadro do vídeo. Verifique se a câmera está conectada.', 'error');
+        showFeedback(n2BioFeedback, 'Não foi possível capturar o rosto na região oval. Verifique se a câmera está conectada.', 'error');
         btnN2StartScan.disabled = false;
         if (btnN2ScanLabel) btnN2ScanLabel.textContent = 'TENTAR NOVAMENTE';
         return;
@@ -981,12 +994,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const mensagem = erro?.erro?.mensagem || 'Acesso Negado: usuário não cadastrado ou facial não reconhecida.';
 
         if (status === 400) {
-          scannerNivel2.setErrorState(erro?.erro?.codigo || 'CAPTURE_ERROR', 'REPOSICIONE O ROSTO');
-          showFeedback(n2BioFeedback, `⚠️ ${mensagem}`, 'info');
+          scannerNivel2.setErrorState(erro?.erro?.codigo || 'CAPTURE_ERROR', 'APROXIME NA REGIÃO OVAL');
+          showFeedback(
+            n2BioFeedback,
+            `⚠️ ${mensagem} Aproxime seu rosto da câmera e fique dentro da região oval para o sistema validar melhor.`,
+            'info'
+          );
         } else if (status === 401) {
           const rest = erro.tentativas_restantes !== undefined ? erro.tentativas_restantes : '?';
           scannerNivel2.setErrorState('ACESSO NEGADO', `TENTATIVAS: ${rest}`);
-          showFeedback(n2BioFeedback, `❌ ${mensagem} [Tentativas restantes: ${rest}]`, 'error');
+          showFeedback(
+            n2BioFeedback,
+            `❌ ${mensagem} Aproxime o rosto na região oval para melhor leitura [Tentativas restantes: ${rest}]`,
+            'error'
+          );
         } else if (status === 403) {
           scannerNivel2.setErrorState('TERMINAL BLOQUEADO', 'CONTA BLOQUEADA');
           showFeedback(n2BioFeedback, `🚨 ${mensagem}`, 'error');
@@ -1026,7 +1047,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (scannerCadastro) {
           scannerCadastro.setSuccessState('FOTO CARREGADA', 'PRONTO P/ CADASTRAR');
         }
-        showFeedback(feedbackModal, `📸 Foto facial "${file.name}" carregada e pronta para gravação no banco MySQL.`, 'info');
+        showFeedback(feedbackModal, `📸 Foto facial "${file.name}" carregada e pronta para gravação dos vetores 128D no banco MySQL.`, 'info');
       };
       reader.readAsDataURL(file);
     });
@@ -1037,7 +1058,13 @@ document.addEventListener('DOMContentLoaded', () => {
       const ativa = await scannerCadastro.toggleWebcam();
       btnCadToggleCam.innerHTML = ativa ? '<span>DESATIVAR CÂMERA</span>' : '<span>ATIVAR CÂMERA</span>';
       if (ativa) {
-        showFeedback(feedbackModal, 'Câmera ativa. Posicione o rosto do novo operador e clique em "CAPTURAR FACIAL".', 'info');
+        showFeedback(
+          feedbackModal,
+          '⚠️ Câmera ativa. Aproxime o rosto do operador e mantenha-o dentro da REGIÃO OVAL para o sistema validar melhor, depois clique em "CAPTURAR FACIAL".',
+          'info'
+        );
+      } else {
+        scannerCadastro.resetState();
       }
     });
   }
@@ -1045,17 +1072,35 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnCadCapturarFace && scannerCadastro) {
     btnCadCapturarFace.addEventListener('click', () => {
       if (!scannerCadastro.isCameraActive) {
-        showFeedback(feedbackModal, '⚠️ Ative a câmera primeiro (ou selecione um arquivo JPEG/PNG) para capturar a facial do operador.', 'error');
+        showFeedback(
+          feedbackModal,
+          '⚠️ Ative a câmera primeiro, aproxime o rosto na região oval e clique em "CAPTURAR FACIAL" (ou selecione um arquivo JPEG/PNG).',
+          'error'
+        );
         return;
       }
+
+      if (typeof scannerCadastro.validarPresencaNaRegiaoOval === 'function') {
+        const checagemOval = scannerCadastro.validarPresencaNaRegiaoOval();
+        if (!checagemOval.ok) {
+          scannerCadastro.setErrorState('ENQUADRE NA OVAL', 'APROXIME O ROSTO');
+          showFeedback(feedbackModal, `⚠️ ${checagemOval.motivo}`, 'info');
+          return;
+        }
+      }
+
       const frame = scannerCadastro.captureFrameBase64();
       if (!frame) {
-        showFeedback(feedbackModal, '❌ Falha ao capturar quadro da webcam.', 'error');
+        showFeedback(feedbackModal, '❌ Falha ao capturar o rosto na região oval da webcam.', 'error');
         return;
       }
       frameCadastroBase64 = frame;
-      scannerCadastro.setSuccessState('FACIAL CAPTURADA', 'VETOR 128D PRONTO');
-      showFeedback(feedbackModal, '✅ Rosto capturado com sucesso! Clique em "CADASTRAR OPERADOR E FACIAL" para salvar.', 'success');
+      scannerCadastro.setSuccessState('ROSTO OVAL CAPTURADO', 'VETOR 128D PRONTO');
+      showFeedback(
+        feedbackModal,
+        '✅ Rosto capturado exclusivamente na região oval com sucesso! Clique em "CADASTRAR OPERADOR E FACIAL" para guardar os vetores no banco.',
+        'success'
+      );
     });
   }
 
@@ -1063,15 +1108,23 @@ document.addEventListener('DOMContentLoaded', () => {
     formNovoUsuario.addEventListener('submit', async (e) => {
       e.preventDefault();
 
-      // Se a câmera estiver ligada e ainda não clicou em capturar, captura automaticamente o frame atual
+      // Se a câmera estiver ligada e ainda não clicou em capturar, captura automaticamente o rosto na região oval
       if (!frameCadastroBase64 && scannerCadastro && scannerCadastro.isCameraActive) {
+        if (typeof scannerCadastro.validarPresencaNaRegiaoOval === 'function') {
+          const checagemOval = scannerCadastro.validarPresencaNaRegiaoOval();
+          if (!checagemOval.ok) {
+            scannerCadastro.setErrorState('ENQUADRE NA OVAL', 'APROXIME O ROSTO');
+            showFeedback(feedbackModal, `⚠️ ${checagemOval.motivo}`, 'info');
+            return;
+          }
+        }
         frameCadastroBase64 = scannerCadastro.captureFrameBase64() || '';
       }
 
       if (!frameCadastroBase64) {
         showFeedback(
           feedbackModal,
-          '⚠️ A biometria facial é obrigatória! Ative a câmera e clique em "CAPTURAR FACIAL" (ou envie uma foto JPEG/PNG com rosto nítido).',
+          '⚠️ A biometria facial é obrigatória! Ative a câmera, aproxime o rosto na região oval e clique em "CAPTURAR FACIAL" (ou envie uma foto JPEG/PNG).',
           'error'
         );
         return;
@@ -1079,7 +1132,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const btnSubmit = document.getElementById('btn-submit-novo-usuario');
       if (btnSubmit) btnSubmit.disabled = true;
-      showFeedback(feedbackModal, 'Extraindo vetor biométrico 128D (PIVC) e salvando operador no banco de dados...', 'info');
+      showFeedback(feedbackModal, 'Extraindo vetor biométrico 128D da região oval do rosto e salvando no banco de dados...', 'info');
 
       try {
         const res = await window.ServicoAPI.adicionarUsuarioMySQL({
@@ -1105,9 +1158,13 @@ document.addEventListener('DOMContentLoaded', () => {
         sincronizarDadosBancoMySQL();
       } catch (erro) {
         if (scannerCadastro) {
-          scannerCadastro.setErrorState('FALHA NO CADASTRO', 'VERIFIQUE OS DADOS');
+          scannerCadastro.setErrorState('FALHA NO CADASTRO', 'APROXIME NA REGIÃO OVAL');
         }
-        showFeedback(feedbackModal, `❌ ${erro.message || 'Erro ao cadastrar operador no banco de dados.'}`, 'error');
+        showFeedback(
+          feedbackModal,
+          `❌ ${erro.message || 'Erro ao cadastrar operador no banco de dados.'} Aproxime o rosto na região oval e tente novamente.`,
+          'error'
+        );
       } finally {
         if (btnSubmit) btnSubmit.disabled = false;
       }

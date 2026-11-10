@@ -161,14 +161,14 @@ document.addEventListener('DOMContentLoaded', () => {
             btnToggleCam.textContent = 'Usar Malha Holográfica';
             showFeedback(
               bioFeedback,
-              'Câmera ativa. Enquadre seu rosto e clique em "INICIAR RECONHECIMENTO" para validar seus dados e facial no banco.',
+              '⚠️ Aproxime seu rosto da câmera e mantenha-o dentro da REGIÃO OVAL para o sistema validar melhor. Em seguida, clique em "INICIAR RECONHECIMENTO".',
               'info'
             );
           } else {
             btnToggleCam.textContent = 'Ativar Câmera Real';
             showFeedback(
               bioFeedback,
-              'Câmera real desativada. Clique em "Ativar Câmera Real" abaixo para realizar a validação facial obrigatória.',
+              'Câmera real desativada. Clique em "Ativar Câmera Real" abaixo, aproxime seu rosto na região oval e inicie a validação.',
               'info'
             );
           }
@@ -242,23 +242,33 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!scanner.isCameraActive) {
         showFeedback(
           bioFeedback,
-          '⚠️ A câmera real não está ativa! Clique em "Ativar Câmera Real" abaixo para capturar sua face e validar no banco de dados.',
+          '⚠️ A câmera real não está ativa! Clique em "Ativar Câmera Real" abaixo, aproxime seu rosto na região oval e inicie a validação.',
           'error'
         );
         return;
       }
 
-      btnStartScan.disabled = true;
-      btnScanLabel.textContent = 'VALIDANDO BIOMETRIA...';
-      clearFeedback(bioFeedback);
-      scanner.setScanningState(true, 'VALIDANDO DADOS E FACIAL (PIVC)...');
+      // Valida se há presença/iluminação adequada dentro da região oval antes de enviar
+      if (typeof scanner.validarPresencaNaRegiaoOval === 'function') {
+        const checagemOval = scanner.validarPresencaNaRegiaoOval();
+        if (!checagemOval.ok) {
+          scanner.setErrorState('ENQUADRE NA OVAL', 'APROXIME O ROSTO');
+          showFeedback(bioFeedback, `⚠️ ${checagemOval.motivo}`, 'info');
+          return;
+        }
+      }
 
-      // 1. Captura o quadro real da webcam em Base64
+      btnStartScan.disabled = true;
+      btnScanLabel.textContent = 'VALIDANDO ROSTO NA OVAL...';
+      clearFeedback(bioFeedback);
+      scanner.setScanningState(true, 'VALIDANDO ROSTO NA REGIÃO OVAL...');
+
+      // 1. Captura o quadro real da webcam limitado estritamente ao rosto na região oval em Base64
       const frameBase64 = scanner.captureFrameBase64();
 
       if (!frameBase64) {
         scanner.setErrorState('ERRO DE CAPTURA', 'FRAME NULO');
-        showFeedback(bioFeedback, 'Não foi possível capturar o quadro do vídeo. Verifique se a câmera está conectada.', 'error');
+        showFeedback(bioFeedback, 'Não foi possível capturar o rosto na região oval. Verifique se a câmera está conectada.', 'error');
         btnStartScan.disabled = false;
         btnScanLabel.textContent = 'TENTAR NOVAMENTE';
         return;
@@ -301,14 +311,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const mensagem = erro?.erro?.mensagem || 'Acesso Negado: usuário não cadastrado ou biometria facial não reconhecida.';
 
         if (status === 400) {
-          scanner.setErrorState(codigo, 'REPOSICIONE O ROSTO');
-          showFeedback(bioFeedback, `⚠️ ${mensagem}`, 'info');
+          scanner.setErrorState(codigo, 'APROXIME NA REGIÃO OVAL');
+          showFeedback(
+            bioFeedback,
+            `⚠️ ${mensagem} Aproxime seu rosto da câmera e mantenha-o centralizado dentro da região oval para o sistema validar melhor.`,
+            'info'
+          );
           btnStartScan.disabled = false;
           btnScanLabel.textContent = 'ESCANEAR NOVAMENTE';
         } else if (status === 401) {
           const tentativasRestantes = erro.tentativas_restantes !== undefined ? erro.tentativas_restantes : '?';
           scanner.setErrorState('ACESSO NEGADO', `TENTATIVAS: ${tentativasRestantes}`);
-          showFeedback(bioFeedback, `❌ ${mensagem} [Tentativas restantes: ${tentativasRestantes}]`, 'error');
+          showFeedback(
+            bioFeedback,
+            `❌ ${mensagem} Aproxime o rosto na região oval para melhor leitura [Tentativas restantes: ${tentativasRestantes}]`,
+            'error'
+          );
           btnStartScan.disabled = false;
           btnScanLabel.textContent = 'TENTAR NOVAMENTE';
         } else if (status === 403) {
@@ -339,10 +357,14 @@ document.addEventListener('DOMContentLoaded', () => {
       btnToggleCam.textContent = active ? 'Usar Malha Holográfica' : 'Ativar Câmera Real';
 
       if (active) {
-        showFeedback(bioFeedback, 'Câmera ativada. Posicione seu rosto no centro do enquadramento.', 'info');
+        showFeedback(
+          bioFeedback,
+          '⚠️ Câmera ativada. Aproxime seu rosto e mantenha-o dentro da REGIÃO OVAL para o sistema validar melhor.',
+          'info'
+        );
       } else {
         scanner.resetState();
-        showFeedback(bioFeedback, 'Modo holográfico ativo. Ative a câmera real para validação das 5 fases.', 'info');
+        showFeedback(bioFeedback, 'Modo holográfico ativo. Ative a câmera real e posicione o rosto na região oval para validação.', 'info');
       }
     });
   }
