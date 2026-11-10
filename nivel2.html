@@ -10,8 +10,8 @@
   <link rel="preload" href="src/assets/fonts/HostGrotesk-Italic-VariableFont_wght.ttf" as="font" type="font/ttf" crossorigin>
 
   <!-- Estilos CSS -->
-  <link rel="stylesheet" href="src/css/estilo.css">
-  <link rel="stylesheet" href="src/css/components/painel-nivel3.css">
+  <link rel="stylesheet" href="src/css/estilo.css?v=2">
+  <link rel="stylesheet" href="src/css/components/painel-nivel3.css?v=2">
 </head>
 <body class="dashboard-body" data-role-nivel="2">
   <!-- Canvas de Fundo Interativo -->
@@ -457,7 +457,7 @@
             <div class="reticle-corner corner-bl"></div>
             <div class="reticle-corner corner-br"></div>
 
-            <div class="n2-hud-top-label">ESCANEAR ROSTO</div>
+            <div class="n2-hud-top-label">APROXIME O ROSTO NA REGIÃO OVAL</div>
 
             <div class="scan-laser" id="scan-laser"></div>
             <div class="crosshair-h"></div>
@@ -467,13 +467,28 @@
             <canvas id="face-mesh-canvas" width="380" height="310"></canvas>
             <video id="webcam-video" autoplay playsinline muted></video>
 
+            <div class="oval-face-overlay" aria-hidden="true">
+              <div class="oval-face-cutout">
+                <span class="oval-tick tick-top"></span>
+                <span class="oval-tick tick-bottom"></span>
+                <span class="oval-tick tick-left"></span>
+                <span class="oval-tick tick-right"></span>
+              </div>
+              <div class="oval-proximity-pill">APROXIME O ROSTO E FIQUE NA REGIÃO OVAL</div>
+            </div>
+
             <div class="n2-hud-bottom-label">
-              ESCANEAR ROSTO<br>MANTENHA-SE VISÍVEL
+              FIQUE NA REGIÃO OVAL<br>CAPTURA LIMITADA SOMENTE AO ROSTO
             </div>
           </div>
 
           <!-- Painel Direito de Controle e Status Biométrico -->
           <div class="n2-controls-col">
+            <div class="oval-proximity-warning" id="n2-oval-warning">
+              <span class="oval-warn-icon">⚠️</span>
+              <span><strong>AVISO:</strong> Aproxime seu rosto e mantenha-o na <strong>região oval</strong> para o sistema validar melhor e liberar o acesso ao cofre.</span>
+            </div>
+
             <div class="n2-status-banner">
               <div class="n2-pulse-ring">
                 <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#ff2a40" stroke-width="2">
@@ -543,11 +558,11 @@
   </div>
 
   <!-- Scripts JavaScript -->
-  <script src="src/js/config/configuracao-banco.js"></script>
-  <script src="src/js/services/servico-api.js"></script>
-  <script src="src/js/particulas.js"></script>
-  <script src="src/js/scanner-facial.js"></script>
-  <script src="src/js/components/menu-niveis.js"></script>
-  <script src="src/js/painel-nivel3.js"></script>
+  <script src="src/js/config/configuracao-banco.js?v=2"></script>
+  <script src="src/js/services/servico-api.js?v=2"></script>
+  <script src="src/js/particulas.js?v=2"></script>
+  <script src="src/js/scanner-facial.js?v=2"></script>
+  <script src="src/js/components/menu-niveis.js?v=2"></script>
+  <script src="src/js/painel-nivel3.js?v=2"></script>
 </body>
 </html>
