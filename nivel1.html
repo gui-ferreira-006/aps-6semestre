@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>F.A.C.A - Nível 1 | Relatórios</title>
+
+  <!-- Fonte Local: Host Grotesk (pasta fonts/) -->
+  <link rel="preload" href="src/assets/fonts/HostGrotesk-VariableFont_wght.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="preload" href="src/assets/fonts/HostGrotesk-Italic-VariableFont_wght.ttf" as="font" type="font/ttf" crossorigin>
+
+  <!-- Estilos CSS -->
+  <link rel="stylesheet" href="src/css/estilo.css">
+  <link rel="stylesheet" href="src/css/components/painel-nivel3.css">
+</head>
+<body class="dashboard-body" data-role-nivel="1">
+  <!-- Canvas de Fundo Interativo -->
+  <canvas id="bg-canvas"></canvas>
+
+  <!-- Ambient Glow Vignette -->
+  <div class="ambient-glow"></div>
+
+  <!-- HUD Corner Details -->
+  <div class="hud-corner top-left">
+    <span>SEGURANÇA</span>
+    <span>INFORMAÇÃO</span>
+    <span>PRESERVAÇÃO</span>
+    <span class="highlight">UM FUTURO MAIS SEGURO</span>
+  </div>
+
+  <div class="hud-corner top-right">
+    <div class="restricted-tag">
+      <span>ACESSO RESTRITO</span>
+      <div class="hud-line"></div>
+    </div>
+  </div>
+
+  <div class="hud-corner bottom-left">
+    <span>TECNOLOGIA A SERVIÇO</span>
+    <span>DA CONSERVAÇÃO.</span>
+  </div>
+
+  <div class="hud-corner bottom-right">
+    <div class="nature-tag">
+      <svg class="star-icon" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 2L14.2 9.8L22 12L14.2 14.2L12 22L9.8 14.2L2 12L9.8 9.8L12 2Z"/>
+      </svg>
+      <div class="nature-text">
+        <span>NATUREZA.</span>
+        <span>DADOS.</span>
+        <span>RESULTADOS.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cabeçalho Central F.A.C.A -->
+  <header class="dashboard-top-header">
+    <div class="logo-wrapper">
+      <div class="logo-shield">
+        <svg viewBox="0 0 160 160" class="shield-svg">
+          <defs>
+            <radialGradient id="redGlowN1" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#ff1a35" stop-opacity="0.9" />
+              <stop offset="50%" stop-color="#ab091b" stop-opacity="0.5" />
+              <stop offset="100%" stop-color="#ff0022" stop-opacity="0" />
+            </radialGradient>
+            <filter id="glowEffectN1" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="3" result="blur" />
+              <feComposite in="SourceGraphic" in2="blur" operator="over" />
+            </filter>
+          </defs>
+          <path d="M22 68 L36 68 L48 80 L48 102" fill="none" stroke="#cfd6e0" stroke-width="2.5" stroke-linecap="round"/>
+          <circle cx="22" cy="68" r="3" fill="#cfd6e0" />
+          <path d="M138 68 L124 68 L112 80 L112 102" fill="none" stroke="#cfd6e0" stroke-width="2.5" stroke-linecap="round"/>
+          <circle cx="138" cy="68" r="3" fill="#cfd6e0" />
+          <path d="M80 18 L118 42 L118 102 L98 126 L62 126 L42 102 L42 42 Z"
+                fill="none" stroke="#dfe4ec" stroke-width="4.5" stroke-linejoin="round" />
+          <path d="M80 27 L110 47 L110 98 L94 118 L66 118 L50 98 L50 47 Z"
+                fill="none" stroke="#717a8a" stroke-width="2" stroke-linejoin="round" opacity="0.6"/>
+          <path d="M80 38 L100 52 L100 92 L88 106 L72 106 L60 92 L60 52 Z"
+                fill="none" stroke="#ff223e" stroke-width="3" filter="url(#glowEffectN1)" />
+          <circle cx="80" cy="74" r="28" fill="url(#redGlowN1)" opacity="0.75" />
+          <g transform="translate(68, 62)">
+            <rect x="3" y="10" width="18" height="14" rx="2.5" fill="#e6142c" stroke="#ff475b" stroke-width="1.5" />
+            <path d="M6 10 V6 A6 6 0 0 1 18 6 V10" fill="none" stroke="#ff6b7b" stroke-width="2.5" stroke-linecap="round" />
+            <circle cx="12" cy="16" r="2" fill="#ffffff" />
+            <path d="M12 18 V21" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+    <h1 class="system-title">F.A.C.A</h1>
+    <p class="system-subtitle">MINISTÉRIO DO MEIO AMBIENTE</p>
+  </header>
+
+  <!-- Layout Principal: Menu Lateral + Telas das Abas de Nível 1 -->
+  <div class="dashboard-layout">
+
+    <!-- Menu Lateral Cumulativo (Role Nível 1 vê somente Nível 1) -->
+    <div id="sidebar-menu-container"></div>
+
+    <!-- Container das 4 Telas/Abas do Nível 1 -->
+    <main class="dashboard-workspace">
+
+      <!-- ==================================================================
+           ABA 1: SÍNTESE DE ESTATÍSTICAS (#estatisticas)
+           Pré-configurada para receber o banco de dados MySQL (sem dados)
+           ================================================================== -->
+      <section class="panel-main-card tab-screen active" id="tab-estatisticas" data-tab-panel="estatisticas">
+        <div class="screen-header-block">
+          <h2 class="screen-main-title">SÍNTESE DE ESTATÍSTICAS</h2>
+        </div>
+
+        <!--
+          [PONTO DE ENTRADA MYSQL - SÍNTESE DE ESTATÍSTICAS]
+          Endpoint: GET /api/v1/nivel1/estatisticas
+          Popula os gráficos (#sql-chart-deteccao-bars, #sql-chart-media-amostras)
+          e os 4 cards de indicadores laterais.
+        -->
+        <div class="stats-layout-grid">
+          <!-- Coluna Esquerda: 2 Gráficos -->
+          <div class="stats-charts-col">
+
+            <!-- Gráfico 1: Dados de Detecção -->
+            <div class="cyber-inner-card">
+              <div class="inner-card-top">
+                <span class="inner-card-title">Dados de Detecção</span>
+                <div class="chart-legend-inline">
+                  <span><i class="legend-dot red"></i>Diário</span>
+                  <span><i class="legend-dot grey"></i>Mensal</span>
+                </div>
+              </div>
+              <div class="stats-svg-box">
+                <svg viewBox="0 0 520 155" preserveAspectRatio="none">
+                  <!-- Grade e Eixos Y (0 a 50) -->
+                  <g fill="#7c8598" font-size="10" font-family="Host Grotesk, sans-serif">
+                    <text x="4" y="16">50</text>
+                    <text x="4" y="40">40</text>
+                    <text x="4" y="64">30</text>
+                    <text x="4" y="88">20</text>
+                    <text x="4" y="112">10</text>
+                    <text x="10" y="134">0</text>
+                  </g>
+                  <g stroke="rgba(255,255,255,0.06)" stroke-width="1">
+                    <line x1="28" y1="12" x2="510" y2="12"/>
+                    <line x1="28" y1="36" x2="510" y2="36"/>
+                    <line x1="28" y1="60" x2="510" y2="60"/>
+                    <line x1="28" y1="84" x2="510" y2="84"/>
+                    <line x1="28" y1="108" x2="510" y2="108"/>
+                    <line x1="28" y1="132" x2="510" y2="132" stroke="rgba(255,255,255,0.14)"/>
+                  </g>
+                  <!-- Eixo X: Meses -->
+                  <g fill="#7c8598" font-size="10" font-family="Host Grotesk, sans-serif" text-anchor="middle">
+                    <text x="55" y="148">Jan</text>
+                    <text x="102" y="148">Fev</text>
+                    <text x="149" y="148">Mar</text>
+                    <text x="196" y="148">Abr</text>
+                    <text x="243" y="148">Mai</text>
+                    <text x="290" y="148">Jun</text>
+                    <text x="337" y="148">Jul</text>
+                    <text x="384" y="148">Ago</text>
+                    <text x="431" y="148">Set</text>
+                    <text x="478" y="148">Out</text>
+                  </g>
+                  <!-- Grupo vazio onde o JS injetará as barras do MySQL -->
+                  <g id="sql-chart-deteccao-bars"></g>
+                </svg>
+              </div>
+            </div>
+
+            <!-- Gráfico 2: Média de Amostras -->
+            <div class="cyber-inner-card">
+              <div class="inner-card-top">
+                <span class="inner-card-title">Média de Amostras</span>
+              </div>
+              <div class="stats-svg-box">
+                <svg viewBox="0 0 520 155" preserveAspectRatio="none">
+                  <!-- Grade e Eixos Y (0 a 100) -->
+                  <g fill="#7c8598" font-size="10" font-family="Host Grotesk, sans-serif">
+                    <text x="0" y="16">100</text>
+                    <text x="4" y="40">80</text>
+                    <text x="4" y="64">60</text>
+                    <text x="4" y="88">40</text>
+                    <text x="4" y="112">20</text>
+                    <text x="10" y="134">0</text>
+                  </g>
+                  <g stroke="rgba(255,255,255,0.06)" stroke-width="1">
+                    <line x1="28" y1="12" x2="510" y2="12"/>
+                    <line x1="28" y1="36" x2="510" y2="36"/>
+                    <line x1="28" y1="60" x2="510" y2="60"/>
+                    <line x1="28" y1="84" x2="510" y2="84"/>
+                    <line x1="28" y1="108" x2="510" y2="108"/>
+                    <line x1="28" y1="132" x2="510" y2="132" stroke="rgba(255,255,255,0.14)"/>
+                  </g>
+                  <!-- Eixo X: Meses -->
+                  <g fill="#7c8598" font-size="10" font-family="Host Grotesk, sans-serif" text-anchor="middle">
+                    <text x="55" y="148">Jan</text>
+                    <text x="102" y="148">Fev</text>
+                    <text x="149" y="148">Mar</text>
+                    <text x="196" y="148">Abr</text>
+                    <text x="243" y="148">Mai</text>
+                    <text x="290" y="148">Jun</text>
+                    <text x="337" y="148">Set</text>
+                    <text x="384" y="148">Ago</text>
+                    <text x="431" y="148">Out</text>
+                  </g>
+                  <!-- Grupo vazio onde o JS injetará a curva do MySQL -->
+                  <g id="sql-chart-media-amostras"></g>
+                </svg>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Coluna Direita: 4 Cards de KPIs (Sem dados até conectar o MySQL) -->
+          <div class="stats-kpis-col">
+            <div class="kpi-box">
+              <span class="kpi-label">Taxa de Detecção</span>
+              <div class="kpi-value-row">
+                <span class="kpi-big-value" id="sql-kpi-taxa-deteccao">--%</span>
+              </div>
+              <span class="kpi-sub-trend" id="sql-trend-taxa">Aguardando SQL</span>
+            </div>
+
+            <div class="kpi-box">
+              <span class="kpi-label">Média Mensal</span>
+              <div class="kpi-value-row">
+                <span class="kpi-big-value" id="sql-kpi-media-mensal">--</span>
+              </div>
+              <span class="kpi-sub-trend" id="sql-trend-mensal">Aguardando SQL</span>
+            </div>
+
+            <div class="kpi-box">
+              <span class="kpi-label">Média Amostras</span>
+              <div class="kpi-value-row">
+                <span class="kpi-big-value" id="sql-kpi-media-amostras">--</span>
+              </div>
+              <span class="kpi-sub-trend" id="sql-trend-amostras">Aguardando SQL</span>
+            </div>
+
+            <div class="kpi-box">
+              <span class="kpi-label">Total de Amostras</span>
+              <div class="kpi-value-row">
+                <span class="kpi-big-value" id="sql-kpi-total-amostras">--</span>
+              </div>
+              <span class="kpi-sub-trend" id="sql-trend-total">Aguardando SQL</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================================================================
+           ABA 2: PANORAMA DE TOXINAS (#panorama)
+           Pré-configurada para receber o banco de dados MySQL (sem dados)
+           ================================================================== -->
+      <section class="panel-main-card tab-screen" id="tab-panorama" data-tab-panel="panorama">
+        <div class="screen-header-block">
+          <h2 class="screen-main-title">PANORAMA DE TOXINAS</h2>
+        </div>
+
+        <!--
+          [PONTO DE ENTRADA MYSQL - PANORAMA DE TOXINAS]
+          Endpoint: GET /api/v1/nivel1/toxinas
+          Popula o mapa de calor (#sql-heatmap-points), os gráficos de rosca
+          e as barras de Toxina A, Toxina B e Toxina C.
+        -->
+        <div class="panorama-grid">
+          <!-- Quadrante Superior Esquerdo: Mapa de Calor (Sem manchas fixas, aguardando SQL) -->
+          <div class="heatmap-viewport" id="sql-heatmap-container">
+            <div class="heatmap-zoom-controls">
+              <button type="button" class="btn-map-zoom" aria-label="Mais zoom">+</button>
+              <button type="button" class="btn-map-zoom" aria-label="Menos zoom">−</button>
+            </div>
+            <div class="heatmap-scale-bar">
+              <span>0%</span>
+              <div class="scale-gradient-strip"></div>
+            </div>
+            <svg viewBox="0 0 480 250" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
+              <!-- Linhas cartográficas escuras de fundo -->
+              <g stroke="rgba(255,255,255,0.06)" stroke-width="1.2" fill="none">
+                <path d="M 0 60 Q 140 70 240 120 T 480 160"/>
+                <path d="M 80 0 L 160 250"/>
+                <path d="M 290 0 Q 260 120 310 250"/>
+                <path d="M 0 180 L 480 95"/>
+              </g>
+              <!-- Camada vazia onde o MySQL injetará os pontos de calor -->
+              <g id="sql-heatmap-points"></g>
+            </svg>
+          </div>
+
+          <!-- Quadrante Superior Direito: Rosca + Toxina A / Toxina B -->
+          <div class="cyber-inner-card donut-card-flex">
+            <div class="donut-svg-wrap">
+              <svg viewBox="0 0 120 120" width="120" height="120">
+                <circle cx="60" cy="60" r="44" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="16"/>
+                <!-- Segmentos pré-configurados para receber percentuais do MySQL -->
+                <circle id="sql-donut-top-seg" cx="60" cy="60" r="44" fill="none" stroke="#2ed573" stroke-width="16"
+                        stroke-dasharray="0 276" transform="rotate(-90 60 60)"/>
+              </svg>
+              <span class="donut-center-text" id="sql-donut-top-val">--%</span>
+            </div>
+            <div class="segmented-bars-group">
+              <div class="seg-bar-item">
+                <label>Toxina A</label>
+                <div class="seg-bar-track">
+                  <div class="seg-bar-fill" id="sql-bar-top-toxina-a"></div>
+                </div>
+              </div>
+              <div class="seg-bar-item">
+                <label>Toxina B</label>
+                <div class="seg-bar-track">
+                  <div class="seg-bar-fill" id="sql-bar-top-toxina-b"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quadrante Inferior Esquerdo: Rosca + Toxina A, B, C -->
+          <div class="cyber-inner-card donut-bottom-left-flex">
+            <div class="donut-svg-wrap">
+              <svg viewBox="0 0 120 120" width="120" height="120">
+                <circle cx="60" cy="60" r="44" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="15"/>
+                <circle id="sql-donut-bl-seg" cx="60" cy="60" r="44" fill="none" stroke="#e01b2f" stroke-width="15"
+                        stroke-dasharray="0 276" transform="rotate(-90 60 60)"/>
+              </svg>
+              <span class="donut-center-text" id="sql-donut-bl-val">--%</span>
+            </div>
+            <div class="segmented-bars-group">
+              <div class="seg-bar-item">
+                <label>Toxina A</label>
+                <div class="seg-bar-track">
+                  <div class="seg-bar-fill" id="sql-bar-bl-toxina-a"></div>
+                </div>
+              </div>
+              <div class="seg-bar-item">
+                <label>Toxina B</label>
+                <div class="seg-bar-track">
+                  <div class="seg-bar-fill" id="sql-bar-bl-toxina-b"></div>
+                </div>
+              </div>
+              <div class="seg-bar-item">
+                <label>Toxina C</label>
+                <div class="seg-bar-track">
+                  <div class="seg-bar-fill" id="sql-bar-bl-toxina-c"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quadrante Inferior Direito: Rosca Secundária -->
+          <div class="cyber-inner-card" style="display: flex; align-items: center; justify-content: center;">
+            <div class="donut-svg-wrap">
+              <svg viewBox="0 0 120 120" width="120" height="120">
+                <circle cx="60" cy="60" r="44" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="15"/>
+                <circle id="sql-donut-br-seg" cx="60" cy="60" r="44" fill="none" stroke="#ff2a40" stroke-width="15"
+                        stroke-dasharray="0 276" transform="rotate(-90 60 60)"/>
+              </svg>
+              <span class="donut-center-text" id="sql-donut-br-val">--%</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================================================================
+           ABA 3: HISTÓRICO DE ALERTAS (#alertas)
+           Pré-configurada para receber o banco de dados MySQL (sem dados)
+           ================================================================== -->
+      <section class="panel-main-card tab-screen" id="tab-alertas" data-tab-panel="alertas">
+        <div class="screen-header-block">
+          <h2 class="screen-main-title">HISTÓRICO DE ALERTAS</h2>
+        </div>
+
+        <!--
+          [PONTO DE ENTRADA MYSQL - HISTÓRICO DE ALERTAS]
+          Endpoint: GET /api/v1/nivel1/alertas
+          Query: SELECT data_hora, nivel_severidade, descricao, status FROM alertas;
+          Popula <tbody id="tbody-historico-alertas">
+        -->
+        <div class="alerts-table-card">
+          <table class="flat-cyber-table" id="tabela-historico-alertas">
+            <thead>
+              <tr>
+                <th>Data/hora</th>
+                <th>Nível</th>
+                <th>Descrição</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-historico-alertas">
+              <tr class="sql-empty-row">
+                <td colspan="4">Sem dados — Pré-configurado para receber a tabela `alertas` do banco de dados MySQL.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ==================================================================
+           ABA 4: GERADOR PDF (#pdf)
+           Pré-configurada para receber o banco de dados MySQL (sem dados)
+           ================================================================== -->
+      <section class="panel-main-card tab-screen" id="tab-pdf" data-tab-panel="pdf">
+        <div class="screen-header-block">
+          <h2 class="screen-main-title">GERADOR PDF</h2>
+        </div>
+
+        <!--
+          [PONTO DE ENTRADA MYSQL - GERADOR PDF]
+          Endpoint: POST /api/v1/nivel1/relatorio-pdf
+          Busca os registros no MySQL conforme o intervalo de datas e seções marcadas.
+        -->
+        <div class="pdf-generator-grid">
+          <!-- Coluna Esquerda: Filtros e Opções do PDF -->
+          <form class="pdf-form-col" id="form-gerador-pdf">
+            <div>
+              <label class="pdf-field-label">Data</label>
+              <div class="pdf-date-row">
+                <input type="date" id="pdf-data-inicio" class="cyber-input-control" />
+                <input type="date" id="pdf-data-fim" class="cyber-input-control" />
+              </div>
+            </div>
+
+            <div>
+              <label class="pdf-field-label" for="pdf-tipo-relatorio">Tipo de relatório</label>
+              <select id="pdf-tipo-relatorio" class="cyber-select-control">
+                <option value="">Tipo de relatório</option>
+                <option value="estatisticas">Síntese de Estatísticas</option>
+                <option value="panorama">Panorama de Toxinas</option>
+                <option value="alertas">Histórico de Alertas</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="pdf-field-label">Seções a incluir</label>
+              <div class="pdf-checkbox-list">
+                <label class="cyber-checkbox-item">
+                  <input type="checkbox" name="secao_pdf" value="1" checked />
+                  <span>Relatório</span>
+                </label>
+                <label class="cyber-checkbox-item">
+                  <input type="checkbox" name="secao_pdf" value="2" />
+                  <span>Relatório II</span>
+                </label>
+                <label class="cyber-checkbox-item">
+                  <input type="checkbox" name="secao_pdf" value="3" />
+                  <span>Relatório III</span>
+                </label>
+                <label class="cyber-checkbox-item">
+                  <input type="checkbox" name="secao_pdf" value="4" />
+                  <span>Relatório IV</span>
+                </label>
+                <label class="cyber-checkbox-item">
+                  <input type="checkbox" name="secao_pdf" value="5" />
+                  <span>Relatório V</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="feedback-msg" id="pdf-feedback"></div>
+
+            <button type="submit" class="btn-red-outline-large" id="btn-gerar-pdf">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+              </svg>
+              <span>GERAR RELATÓRIO PDF</span>
+            </button>
+          </form>
+
+          <!-- Coluna Direita: Pré-visualização da Folha -->
+          <div class="pdf-preview-wrapper">
+            <div style="width: 100%; max-width: 310px; margin-bottom: 8px;">
+              <span class="pdf-field-label">Pré-visualização</span>
+            </div>
+            <div class="pdf-paper-sheet" id="sql-pdf-preview-sheet">
+              <div class="pdf-sheet-top">
+                <span class="pdf-logo-Word">PDF</span>
+                <div class="pdf-meta-lines">
+                  <div>F.A.C.A — MMA</div>
+                  <div id="sql-pdf-data-ref">Aguardando MySQL</div>
+                </div>
+              </div>
+              <div class="pdf-sheet-section-title">Metadados da Consulta SQL</div>
+              <div style="font-size: 0.62rem; color: #5a6270; margin-bottom: 12px;">
+                Pré-configurado para receber os registros do banco de dados MySQL.
+              </div>
+              <div class="pdf-sheet-section-title">Registros do Relatório</div>
+              <table class="pdf-sheet-table">
+                <thead>
+                  <tr>
+                    <th>Item</th>
+                    <th>Referência</th>
+                    <th>Valor</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-pdf-preview">
+                  <tr>
+                    <td colspan="3" style="text-align: center; padding: 18px 4px;">
+                      Sem dados (Aguardando SQL)
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Scripts JavaScript -->
+  <script src="src/js/config/configuracao-banco.js"></script>
+  <script src="src/js/services/servico-api.js"></script>
+  <script src="src/js/particulas.js"></script>
+  <script src="src/js/components/menu-niveis.js"></script>
+  <script src="src/js/painel-nivel3.js"></script>
+</body>
+</html>
