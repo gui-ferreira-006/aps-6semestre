@@ -13,7 +13,7 @@ pool de conexões, classe base declarativa (DeclarativeBase), gerador de sessão
 from __future__ import annotations
 
 import os
-from typing import Generator
+from typing import Generator, Optional
 
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
@@ -99,3 +99,26 @@ def testar_conexao_sql() -> bool:
         return True
     except Exception:
         return False
+
+
+def obter_instancia_banco() -> Optional[str]:
+    """
+    Retorna um identificador do "ciclo de vida" do banco aps_biometria: o
+    instante de criação da tabela usuario (muda a cada `docker compose down -v`
+    + recriação do volume). O frontend compara esse valor com o que guardou no
+    localStorage para descartar caches locais de uma instância anterior do banco
+    (dados residuais de testes), garantindo o "Estado Dia Zero" na interface.
+    """
+    try:
+        with engine.connect() as conexao:
+            criado_em = conexao.execute(
+                text(
+                    "SELECT CREATE_TIME FROM information_schema.TABLES "
+                    "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'usuario'"
+                )
+            ).scalar()
+        if criado_em is not None and hasattr(criado_em, "isoformat"):
+            return str(criado_em.isoformat())
+        return str(criado_em) if criado_em is not None else None
+    except Exception:
+        return None

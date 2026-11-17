@@ -18,6 +18,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const spaViewDashboard = document.getElementById('spa-view-dashboard');
   const isSpaMode = Boolean(spaViewLogin && spaViewDashboard);
 
+  // Estado "Dia Zero" da tela de login (index.html):
+  //  - toda abertura/recarga da tela de login descarta qualquer sessão residual
+  //    (o sistema nunca pula o login com token antigo do sessionStorage);
+  //  - se o banco foi recriado (docker compose down -v), descarta também os
+  //    caches locais persistentes (localStorage) de testes anteriores.
+  if (isSpaMode && window.ServicoAPI) {
+    window.ServicoAPI.limparSessaoResidual();
+    window.ServicoAPI.sincronizarInstanciaBanco();
+  }
+
   // Nível exigido da página standalone (se aplicável)
   const nivelPaginaAtributo = Number(document.body.getAttribute('data-role-nivel')) || 1;
   let nivelAtual = 1;

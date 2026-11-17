@@ -140,11 +140,69 @@ const ServicoAPI = {
         descricao: `Sessão encerrada pelo operador ${user.nome}.`
       });
     }
-    sessionStorage.removeItem(this.STORAGE_KEYS.TOKEN);
-    sessionStorage.removeItem(this.STORAGE_KEYS.USUARIO);
-    sessionStorage.removeItem(this.STORAGE_KEYS.ROLE_NIVEL);
-    sessionStorage.removeItem(this.STORAGE_KEYS.AUTENTICADO);
-    sessionStorage.removeItem(this.STORAGE_KEYS.COFRE_DESBLOQUEADO);
+    this.limparSessaoResidual();
+  },
+
+  /**
+   * Remove TODA a sessão do navegador (token, usuário, nível, cofre liberado e
+   * quaisquer outras chaves 'faca_*' do sessionStorage), sem registrar evento.
+   * Chamado ao abrir a tela de login (index.html) e ao encerrar a sessão, para
+   * que o sistema nunca pule o login com uma sessão residual anterior.
+   */
+  limparSessaoResidual() {
+    try {
+      Object.values(this.STORAGE_KEYS).forEach((chave) => sessionStorage.removeItem(chave));
+      Object.keys(sessionStorage)
+        .filter((chave) => chave.startsWith('faca_'))
+        .forEach((chave) => sessionStorage.removeItem(chave));
+    } catch (_) {
+      // sessionStorage indisponível: nada a limpar
+    }
+  },
+
+  /**
+   * Remove os caches locais persistentes (localStorage 'faca_*'): toxinas
+   * adicionadas, logs de auditoria espelhados, bloqueios, aberturas do cofre
+   * e operadores cadastrados de uma instância ANTERIOR do banco.
+   */
+  limparCachesLocais() {
+    try {
+      Object.keys(localStorage)
+        .filter((chave) => chave.startsWith('faca_'))
+        .forEach((chave) => localStorage.removeItem(chave));
+    } catch (_) {
+      // localStorage indisponível: nada a limpar
+    }
+  },
+
+  /**
+   * Compara o identificador da instância do banco (GET /ping -> instancia_banco,
+   * que muda a cada `docker compose down -v`) com o último valor visto por este
+   * navegador. Se o banco foi recriado ("Dia Zero"), descarta todos os caches
+   * locais de testes antigos. Dados gerados AO VIVO na instância atual são
+   * preservados entre logins (ex.: toxina cadastrada no Nível 2 aparece no Nível 1).
+   */
+  async sincronizarInstanciaBanco() {
+    const CHAVE_INSTANCIA = 'faca_instancia_banco';
+    try {
+      const resposta = await fetch(`${this.obterBaseUrl()}/ping`, {
+        headers: { 'Accept': 'application/json' },
+        cache: 'no-store'
+      });
+      const ping = await this.lerRespostaJsonSegura(resposta);
+      const instanciaAtual = ping?.instancia_banco;
+      if (!resposta.ok || !instanciaAtual) return false;
+
+      const instanciaSalva = localStorage.getItem(CHAVE_INSTANCIA);
+      if (instanciaSalva !== instanciaAtual) {
+        this.limparCachesLocais();
+        localStorage.setItem(CHAVE_INSTANCIA, instanciaAtual);
+        return true;
+      }
+    } catch (_) {
+      // Backend offline: mantém o estado local até a próxima abertura do login
+    }
+    return false;
   },
 
   /**

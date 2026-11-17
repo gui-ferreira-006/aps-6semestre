@@ -38,6 +38,10 @@ from models import (
 )
 from schemas import MAX_TENTATIVAS_AUTENTICACAO, mascarar_cpf
 
+# Conta reservada do Administrador Geral (T.I.) — nunca sobrescrita via /cadastrar
+CPF_ADM_GERAL_TI: str = "00000000000"
+MATRICULA_ADM_GERAL_TI: str = "MMA-TI-000"
+
 
 # =============================================================================
 # 1. HASHING E VERIFICAÇÃO DE SENHAS (PBKDF2-HMAC-SHA256 / SHA-256)
@@ -483,16 +487,72 @@ def criar_novo_usuario(
     """
     Cadastra um novo servidor na tabela usuario e, opcionalmente, persiste
     seu vetor facial de 128D na tabela biometria.
+
+    Regra de "Enrollment de Registro Pré-Existente" (Dia Zero / Apresentação):
+      * Se o CPF ou a Matrícula informados pertencerem a um operador que AINDA
+        NÃO possui biometria (ex.: operadores do seed 02_seed_operadores_e_cofre.sql),
+        o registro existente é ATUALIZADO (nome, CPF, matrícula, senha, cargo,
+        divisão e nível) e a biometria 128D é vinculada — sem erro 409;
+      * Se o operador já possuir biometria cadastrada, o conflito 409 é mantido
+        (impede sobrescrever o rosto de referência de outra pessoa);
+      * A conta reservada do Administrador Geral (T.I.) nunca é sobrescrita;
+      * CPF e Matrícula novos criam um registro normalmente.
     """
     cpf_limpo = re.sub(r"\D", "", cpf)
+    matricula_limpa = matricula.strip()
 
-    existente_cpf = db.query(Usuario).filter(Usuario.cpf == cpf_limpo).first()
-    if existente_cpf:
-        raise ValueError("CPF_ALREADY_EXISTS")
+    existente_cpf = (
+        db.query(Usuario)
+        .options(joinedload(Usuario.biometria))
+        .filter(Usuario.cpf == cpf_limpo)
+        .first()
+    )
+    existente_mat = (
+        db.query(Usuario)
+        .options(joinedload(Usuario.biometria))
+        .filter(Usuario.matricula == matricula_limpa)
+        .first()
+    )
 
-    existente_mat = db.query(Usuario).filter(Usuario.matricula == matricula.strip()).first()
-    if existente_mat:
-        raise ValueError("MATRICULA_ALREADY_EXISTS")
+    alvo: Optional[Usuario] = (
+        existente_cpf if existente_cpf is not None else existente_mat
+    )
+    if alvo is not None:
+        # CPF e Matrícula apontando para operadores DIFERENTES: ambíguo -> 409
+        if (
+            existente_cpf is not None
+            and existente_mat is not None
+            and existente_cpf.id_usuario != existente_mat.id_usuario
+        ):
+            raise ValueError("MATRICULA_ALREADY_EXISTS")
+
+        codigo_conflito = (
+            "CPF_ALREADY_EXISTS"
+            if existente_cpf is not None
+            else "MATRICULA_ALREADY_EXISTS"
+        )
+
+        if (
+            alvo.cpf == CPF_ADM_GERAL_TI
+            or alvo.matricula.upper() == MATRICULA_ADM_GERAL_TI
+        ):
+            raise ValueError("CONTA_RESERVADA_TI")
+
+        if alvo.biometria is not None:
+            raise ValueError(codigo_conflito)
+
+        return _atualizar_usuario_sem_biometria(
+            db,
+            alvo,
+            nome=nome,
+            cpf_limpo=cpf_limpo,
+            matricula=matricula_limpa,
+            senha_plana=senha_plana,
+            cargo_id=cargo_id,
+            divisao_id=divisao_id,
+            nivel_acesso=nivel_acesso,
+            vetor_biometrico=vetor_biometrico,
+        )
 
     hash_senha = gerar_hash_senha(senha_plana)
     usuario = Usuario(
@@ -535,6 +595,64 @@ def criar_novo_usuario(
 
     db.commit()
     return buscar_usuario_por_id(db, usuario.id_usuario) or usuario
+
+
+def _atualizar_usuario_sem_biometria(
+    db: Session,
+    usuario: Usuario,
+    nome: str,
+    cpf_limpo: str,
+    matricula: str,
+    senha_plana: str,
+    cargo_id: int,
+    divisao_id: int,
+    nivel_acesso: int,
+    vetor_biometrico: Optional[List[float]] = None,
+) -> Usuario:
+    """
+    Atualiza um operador pré-existente que ainda não possui biometria (ex.:
+    registro do seed inicial), aplicando os novos dados funcionais, a nova
+    senha (hash PBKDF2) e vinculando o vetor facial 128D na tabela biometria.
+    """
+    id_alvo = usuario.id_usuario
+    usuario.nome = nome.strip()
+    usuario.cpf = cpf_limpo
+    usuario.matricula = matricula
+    usuario.hash_senha = gerar_hash_senha(senha_plana)
+    usuario.id_cargo = cargo_id
+    usuario.id_divisao = divisao_id
+    usuario.id_nivel_acesso = nivel_acesso
+    usuario.status_conta = "ATIVA"
+    db.flush()
+
+    if vetor_biometrico:
+        biometria = Biometria(
+            id_usuario=id_alvo,
+            modelo_facial=vetor_biometrico,
+            versao_modelo="dlib_resnet34_v1",
+        )
+        db.add(biometria)
+        db.flush()
+
+    registrar_auditoria(
+        db,
+        id_usuario=id_alvo,
+        acao="CADASTRO_USUARIO",
+        entidade_afetada="usuario",
+        id_registro_afetado=str(id_alvo),
+        resultado="SUCESSO",
+        detalhes={
+            "modo": "ATUALIZACAO_REGISTRO_SEM_BIOMETRIA",
+            "matricula": usuario.matricula,
+            "id_cargo": cargo_id,
+            "id_divisao": divisao_id,
+            "nivel_acesso": nivel_acesso,
+            "biometria_cadastrada": vetor_biometrico is not None,
+        },
+    )
+
+    db.commit()
+    return buscar_usuario_por_id(db, id_alvo) or usuario
 
 
 # =============================================================================

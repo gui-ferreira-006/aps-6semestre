@@ -8,6 +8,8 @@ CREATE DATABASE IF NOT EXISTS aps_biometria
     CHARACTER SET utf8mb4
     COLLATE utf8mb4_0900_ai_ci;
 
+SET NAMES utf8mb4;
+
 GRANT ALL PRIVILEGES ON aps_biometria.* TO 'faca_user'@'%';
 FLUSH PRIVILEGES;
 

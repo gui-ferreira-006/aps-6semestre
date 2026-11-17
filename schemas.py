@@ -158,6 +158,15 @@ class PingResponse(_SchemaBase):
         description="Instante UTC em que a resposta foi gerada pelo servidor.",
         examples=["2026-09-06T20:50:00Z"],
     )
+    instancia_banco: Optional[str] = Field(
+        default=None,
+        description=(
+            "Identificador do ciclo de vida do banco aps_biometria (instante de "
+            "criação do schema). Muda a cada recriação do volume Docker; o "
+            "frontend o utiliza para descartar caches locais de instâncias antigas."
+        ),
+        examples=["2026-11-17T13:50:00"],
+    )
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -166,6 +175,7 @@ class PingResponse(_SchemaBase):
                 "mensagem": "Servidor F.A.C.A. operacional",
                 "versao": "1.0.0",
                 "timestamp": "2026-09-06T20:50:00Z",
+                "instancia_banco": "2026-11-17T13:50:00",
             }
         }
     )

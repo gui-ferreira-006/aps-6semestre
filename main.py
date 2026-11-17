@@ -34,7 +34,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 
 # ── Conexão com Banco de Dados e Camada de Persistência ──
-from database import get_db, testar_conexao_sql
+from database import get_db, obter_instancia_banco, testar_conexao_sql
 import crud
 from models import Toxina, Usuario
 
@@ -187,12 +187,26 @@ def _resolver_operador_token(
     # 2. Resolução flexível para tokens do roteiro/testes automatizados
     # Exemplo: 'mock-jwt-faca-...' associado ao operador padrão se houver
     if token.startswith("mock-jwt-faca-"):
-        primeiro_usuario = (
-            db.query(Usuario)
-            .filter(Usuario.status_conta == "ATIVA")
-            .order_by(Usuario.id_usuario.asc())
-            .first()
-        )
+        primeiro_usuario: Optional[Usuario] = None
+
+        # Token fixo do ADM Geral (T.I.) emitido pelo frontend
+        # ('mock-jwt-faca-adm-ti-<cpf>'): resolve para a própria conta de T.I.
+        # (Nível 3) em vez do primeiro operador cadastrado (Nível 1).
+        if token.startswith("mock-jwt-faca-adm-ti-"):
+            cpf_ti = token.rsplit("-", 1)[-1]
+            primeiro_usuario = (
+                db.query(Usuario)
+                .filter(Usuario.cpf == cpf_ti, Usuario.status_conta == "ATIVA")
+                .first()
+            )
+
+        if primeiro_usuario is None:
+            primeiro_usuario = (
+                db.query(Usuario)
+                .filter(Usuario.status_conta == "ATIVA")
+                .order_by(Usuario.id_usuario.asc())
+                .first()
+            )
         if primeiro_usuario:
             return {
                 "id_usuario": primeiro_usuario.id_usuario,
@@ -617,6 +631,18 @@ async def cadastrar_usuario(
     # 1. Extração biométrica facial
     extracao = extrair_caracteristicas(payload.imagem_base64)
 
+    # Registro pré-existente (ex.: operador do seed sem biometria) será
+    # atualizado e terá a biometria vinculada em vez de gerar 409.
+    registro_pre_existente = (
+        db.query(Usuario)
+        .filter(
+            (Usuario.cpf == payload.cpf)
+            | (Usuario.matricula == payload.matricula.strip())
+        )
+        .first()
+        is not None
+    )
+
     # 2. Persistência no banco MySQL via repositório CRUD
     try:
         usuario = crud.criar_novo_usuario(
@@ -631,11 +657,21 @@ async def cadastrar_usuario(
             vetor_biometrico=extracao.vetor,
         )
     except ValueError as erro_validacao:
+        db.rollback()
         codigo = str(erro_validacao)
-        mensagem = (
-            "O CPF informado já está cadastrado no sistema."
-            if codigo == "CPF_ALREADY_EXISTS"
-            else "A matrícula institucional já está em uso por outro servidor."
+        mensagens_conflito = {
+            "CPF_ALREADY_EXISTS": (
+                "O CPF informado já está cadastrado no sistema com biometria facial vinculada."
+            ),
+            "MATRICULA_ALREADY_EXISTS": (
+                "A matrícula institucional já está em uso por outro servidor com biometria facial vinculada."
+            ),
+            "CONTA_RESERVADA_TI": (
+                "O CPF/Matrícula informado pertence à conta reservada do Administrador Geral (T.I.)."
+            ),
+        }
+        mensagem = mensagens_conflito.get(
+            codigo, "Conflito de unicidade ao cadastrar o servidor."
         )
         return JSONResponse(
             status_code=409,
@@ -651,7 +687,11 @@ async def cadastrar_usuario(
 
     return UsuarioCadastroResponse(
         sucesso=True,
-        mensagem="Usuário e biometria facial cadastrados com sucesso.",
+        mensagem=(
+            "Operador pré-cadastrado atualizado e biometria facial vinculada com sucesso."
+            if registro_pre_existente
+            else "Usuário e biometria facial cadastrados com sucesso."
+        ),
         usuario=UsuarioCriadoResponse(
             id=usuario.id_usuario,
             nome=usuario.nome,
@@ -820,6 +860,7 @@ async def ping() -> PingResponse:
         mensagem=status_msg,
         versao="2.0.0",
         timestamp=datetime.now(timezone.utc),
+        instancia_banco=obter_instancia_banco() if banco_ok else None,
     )
 
 
